@@ -1,4 +1,4 @@
-import { Twitter } from './types';
+import type { Twitter } from './types';
 
 export function initTwitter() {
   if (typeof window === 'undefined') return;

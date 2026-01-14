@@ -35,6 +35,12 @@ let currentSubmissions: MemorialEntry[] = []
 // --- Auth Logic ---
 
 async function checkUser() {
+  if (!supabase) {
+    loginError.textContent = 'Supabase connection is not configured. Please check your environment variables.'
+    loginError.classList.remove('hidden')
+    showLogin()
+    return
+  }
   const { data: { user } } = await supabase.auth.getUser()
   if (user) {
     showAdmin(user.email || '')
@@ -57,6 +63,11 @@ function showAdmin(email: string) {
 
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault()
+  if (!supabase) {
+    loginError.textContent = 'Supabase connection is not configured.'
+    loginError.classList.remove('hidden')
+    return
+  }
   const email = (document.getElementById('email') as HTMLInputElement).value
   const password = (document.getElementById('password') as HTMLInputElement).value
   
@@ -70,7 +81,9 @@ loginForm.addEventListener('submit', async (e) => {
 })
 
 logoutBtn.addEventListener('click', async () => {
-  await supabase.auth.signOut()
+  if (supabase) {
+    await supabase.auth.signOut()
+  }
   showLogin()
 })
 
