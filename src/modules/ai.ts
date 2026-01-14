@@ -44,12 +44,21 @@ export async function extractMemorialData(url: string) {
             content: `You are an expert data extractor for a human rights memorial website. 
             Extract information about a victim of the Iranian revolution from the provided text.
             
+            IMPORTANT BILINGUAL RULES:
+            1. The "name", "city", "location", and "bio" fields MUST be in English. If the source text is in Persian, translate these to English.
+            2. The "name_fa", "city_fa", "location_fa", and "bio_fa" fields MUST be in Persian (Farsi). If the source text is in English, translate these to Persian.
+            3. Ensure names are spelled correctly in both languages.
+            
             Return ONLY a valid JSON object with the following fields:
-            - name: Full Name
-            - city: City name
+            - name: Full Name (in English)
+            - name_fa: Full Name (in Persian)
+            - city: City name (in English)
+            - city_fa: City name (in Persian)
             - date: YYYY-MM-DD format
-            - location: Specific location or neighborhood
-            - bio: Brief biography (max 200 characters)
+            - location: Specific location or neighborhood (in English)
+            - location_fa: Specific location or neighborhood (in Persian)
+            - bio: Brief biography (max 200 characters, in English)
+            - bio_fa: Brief biography (max 200 characters, in Persian)
             - photo: The URL of the main image attached to the post (look for pbs.twimg.com/media/ URLs)
             - referenceLabel: Source name (e.g. BBC, X Post, IHRDC)
 
@@ -89,5 +98,71 @@ export async function extractMemorialData(url: string) {
   } catch (error) {
     console.error('AI Extraction Error Detail:', error);
     throw error;
+  }
+}
+
+/**
+ * Fixes translations for memorial data.
+ * It ensures English fields are in English and Persian fields are in Persian.
+ */
+export async function translateMemorialData(data: { name: string; city: string; location: string; bio: string; name_fa?: string; city_fa?: string; location_fa?: string; bio_fa?: string }) {
+  try {
+    if (!OPENROUTER_API_KEY || OPENROUTER_API_KEY === 'sk-or-v1-...') {
+      throw new Error('Invalid OpenRouter API Key.');
+    }
+
+    const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'Iran Revolution Memorial'
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert bilingual translator for an Iranian human rights memorial.
+            Your task is to ensure all data is correctly available in both English and Persian (Farsi).
+            
+            RULES:
+            1. Fields ending in "_fa" MUST be in Persian (Farsi).
+            2. Fields NOT ending in "_fa" MUST be in English.
+            3. If a field is provided in the wrong language, translate it to the correct one.
+            4. If a field is missing, generate the translation from its counterpart (e.g., if name_fa is missing, translate name to Persian).
+            5. Maintain a respectful, memorial-appropriate tone.
+            
+            Return ONLY a valid JSON object with these fields:
+            - name: English name
+            - name_fa: Persian name
+            - city: English city
+            - city_fa: Persian city
+            - location: English location
+            - location_fa: Persian location
+            - bio: English bio
+            - bio_fa: Persian bio
+
+            Do not include any other text or markdown code blocks.`
+          },
+          {
+            role: 'user',
+            content: `Fix and complete the translations for this data: ${JSON.stringify(data)}`
+          }
+        ],
+        temperature: 0.1
+      })
+    });
+
+    if (!aiResponse.ok) throw new Error('AI Translation Service Error');
+
+    const result = await aiResponse.json();
+    const resultText = result.choices[0].message.content.trim();
+    const cleanJson = resultText.replace(/```json|```/g, '').trim();
+    return JSON.parse(cleanJson);
+  } catch (error) {
+    console.error('AI Translation Error:', error);
+    return null;
   }
 }

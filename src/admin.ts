@@ -1,5 +1,5 @@
 import { supabase } from './modules/supabase'
-import { fetchMemorials, verifyMemorial, deleteMemorial, submitMemorial, batchUpdateImages } from './modules/dataService'
+import { fetchMemorials, verifyMemorial, deleteMemorial, submitMemorial, batchUpdateImages, batchTranslateMemorials } from './modules/dataService'
 import { extractMemorialData } from './modules/ai'
 import { extractXPostImage } from './modules/imageExtractor'
 import type { MemorialEntry } from './modules/types'
@@ -29,6 +29,7 @@ const aiUrlInput = document.getElementById('ai-url') as HTMLInputElement
 const aiExtractBtn = document.getElementById('ai-extract-btn') as HTMLButtonElement
 const extractImgBtn = document.getElementById('extract-img-btn') as HTMLButtonElement
 const batchImgBtn = document.getElementById('batch-img-btn') as HTMLButtonElement
+const batchTranslateBtn = document.getElementById('batch-translate-btn') as HTMLButtonElement
 const aiStatus = document.getElementById('ai-status') as HTMLParagraphElement
 const jsonImportArea = document.getElementById('json-import') as HTMLTextAreaElement
 const jsonImportBtn = document.getElementById('json-import-btn') as HTMLButtonElement
@@ -271,6 +272,28 @@ batchImgBtn.addEventListener('click', async () => {
   } finally {
     batchImgBtn.disabled = false
     batchImgBtn.textContent = 'Batch Extract Images for Old Entries'
+  }
+})
+
+batchTranslateBtn.addEventListener('click', async () => {
+  if (!confirm('This will search for memorials with missing Persian translations and use AI to fix them. Continue?')) return
+
+  batchTranslateBtn.disabled = true
+  batchTranslateBtn.textContent = 'AI Translating...'
+  
+  try {
+    const { success, count, error } = await batchTranslateMemorials()
+    if (success) {
+      alert(`Successfully translated ${count} memorials!`)
+      loadSubmissions()
+    } else {
+      alert(`Batch translation failed: ${error}`)
+    }
+  } catch (error) {
+    alert('Batch translation failed.')
+  } finally {
+    batchTranslateBtn.disabled = false
+    batchTranslateBtn.textContent = 'AI Fix Missing Persian Translations'
   }
 })
 

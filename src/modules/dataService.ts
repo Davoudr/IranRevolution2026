@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { extractXPostImage } from './imageExtractor'
+import { translateMemorialData } from './ai'
 import type { MemorialEntry } from './types'
 import type { Database } from './database.types'
 
@@ -189,6 +190,69 @@ export async function batchUpdateImages(): Promise<{ success: boolean; count: nu
         if (!updateError) updatedCount++
       }
       
+      await new Promise(r => setTimeout(r, 500))
+    }
+    
+    return { success: true, count: updatedCount }
+  } catch (e) {
+    return { success: false, count: 0, error: e instanceof Error ? e.message : 'Unknown error' }
+  }
+}
+
+export async function batchTranslateMemorials(): Promise<{ success: boolean; count: number; error?: string }> {
+  if (!supabase) return { success: false, count: 0, error: 'Supabase not configured' }
+  
+  try {
+    const { data: memorials, error: fetchError } = await supabase
+      .from('memorials')
+      .select('*')
+    
+    if (fetchError) throw fetchError
+    
+    const rows = (memorials || []) as MemorialRow[]
+    const targets = rows.filter(m => !m.name_fa || !m.city_fa || !m.bio_fa)
+    
+    if (targets.length === 0) return { success: true, count: 0 }
+    
+    let updatedCount = 0
+    for (const m of targets) {
+      const translation = await translateMemorialData({
+        name: m.name,
+        city: m.city,
+        location: m.location || '',
+        bio: m.bio || '',
+        name_fa: m.name_fa || undefined,
+        city_fa: m.city_fa || undefined,
+        location_fa: m.location_fa || undefined,
+        bio_fa: m.bio_fa || undefined
+      })
+      
+      if (translation) {
+        const client = supabase as unknown as { 
+          from: (t: string) => { 
+            update: (d: Record<string, unknown>) => { 
+              eq: (f: string, v: string) => Promise<{ error: unknown }> 
+            } 
+          } 
+        }
+        const { error: updateError } = await client
+          .from('memorials')
+          .update({
+            name: translation.name,
+            name_fa: translation.name_fa,
+            city: translation.city,
+            city_fa: translation.city_fa,
+            location: translation.location,
+            location_fa: translation.location_fa,
+            bio: translation.bio,
+            bio_fa: translation.bio_fa
+          })
+          .eq('id', m.id)
+          
+        if (!updateError) updatedCount++
+      }
+      
+      // Delay to avoid rate limits
       await new Promise(r => setTimeout(r, 500))
     }
     
