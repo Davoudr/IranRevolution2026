@@ -136,6 +136,33 @@
     ]
   },
   {
+  "name": "Mehdi Salahshour",
+  "city": "",
+  "date": "2026-01-13",
+  "location": "",
+  "bio": "Victim of the Iranian regime, as reported by Israel War Room.",
+  "references": [
+    {
+      "label": "Israel War Room on X",
+      "url": ""
+    }
+  ]
+},
+{
+  "name": "علی عنبرستانی",
+  "city": "سبزوار",
+  "date": "",
+  "location": "نارمک",
+  "bio": "متولد ۱۳۶۷. ساکن تهران. با اصابت گلوله به سر در راه آزادی وطن جان باخت.",
+  "references": [
+    {
+      "label": "X Post",
+      "url": "https://x.com/ShahramSadidi/status/2011069611811254480?s=20"
+    }
+  ]
+},
+
+  {
     "id": "mohammad-amin",
     "name": "Mohammad Amin",
     "city": "Mashhad",
@@ -150,6 +177,24 @@
       {
         "label": "X Post",
         "url": "https://x.com/animmigrantofqc/status/2011219034985894150?s=20"
+      }
+    ]
+  },
+  {
+    "id": "nima-parsa",
+    "name": "Nima Parsa",
+    "city": "Tehran",
+    "location": "Tehran",
+    "date": "2026-01-14",
+    "coords": { "lat": 35.6892, "lon": 51.3890 },
+    "bio": "Nima Parsa was an Italian and English teacher who shared free course videos on YouTube. He was killed during the protests on January 14, 2026.",
+    "media": {
+      "xPost": "https://x.com/morgomirrr/status/2011347482924761522?s=20"
+    },
+    "references": [
+      {
+        "label": "X Post",
+        "url": "https://x.com/morgomirrr/status/2011347482924761522?s=20"
       }
     ]
   }
