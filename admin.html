@@ -172,8 +172,9 @@
         <div class="card">
           <div style="display: flex; flex-direction: column; gap: 0.5rem;">
             <button id="batch-img-btn" class="secondary" style="width: 100%;">Batch Extract Images for Old Entries</button>
-            <button id="batch-translate-btn" class="secondary" style="width: 100%;">AI Fix Missing Persian Translations</button>
-          </div>
+          <button id="batch-translate-btn" class="secondary" style="width: 100%;">AI Fix Missing Persian Translations</button>
+          <button id="batch-coords-btn" class="secondary" style="width: 100%;">AI Sync Location/Coordinates</button>
+        </div>
           <div class="tab-container">
             <div id="tab-unverified" class="tab active">Unverified Submissions (<span id="count-unverified">0</span>)</div>
             <div id="tab-verified" class="tab">Verified Memorials (<span id="count-verified">0</span>)</div>
@@ -232,6 +233,9 @@
               <div style="flex: 1;">
                 <label for="lon">Longitude</label>
                 <input id="lon" type="number" step="0.0001" value="51.3890" />
+              </div>
+              <div style="display: flex; align-items: flex-end; padding-bottom: 2px;">
+                <button type="button" id="sync-coords-btn" class="secondary" style="padding: 0.5rem; height: 38px;" title="Sync from Location">🔄</button>
               </div>
             </div>
             <textarea id="bio" placeholder="Biography (English, optional)"></textarea>

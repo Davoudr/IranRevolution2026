@@ -166,3 +166,114 @@ export async function translateMemorialData(data: { name: string; city: string; 
     return null;
   }
 }
+
+/**
+ * Geocodes a location name using AI.
+ * Returns { lat, lon } or null.
+ */
+export async function geocodeLocation(city: string, location: string) {
+  try {
+    if (!OPENROUTER_API_KEY || OPENROUTER_API_KEY === 'sk-or-v1-...') {
+      throw new Error('Invalid OpenRouter API Key.');
+    }
+
+    const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'Iran Revolution Memorial'
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert geocoding assistant for Iran.
+            Given a city name and a specific location/neighborhood in Iran, find the most accurate Latitude and Longitude.
+            
+            Return ONLY a valid JSON object:
+            {
+              "lat": number,
+              "lon": number
+            }
+
+            If you cannot find the exact location, return the coordinates for the center of the city.
+            Do not include any other text or markdown code blocks.`
+          },
+          {
+            role: 'user',
+            content: `Find coordinates for: ${location}, ${city}, Iran`
+          }
+        ],
+        temperature: 0.1
+      })
+    });
+
+    if (!aiResponse.ok) throw new Error('AI Geocoding Service Error');
+
+    const result = await aiResponse.json();
+    const resultText = result.choices[0].message.content.trim();
+    const cleanJson = resultText.replace(/```json|```/g, '').trim();
+    return JSON.parse(cleanJson) as { lat: number; lon: number };
+  } catch (error) {
+    console.error('AI Geocoding Error:', error);
+    return null;
+  }
+}
+
+/**
+ * Reverse geocodes coordinates to a location name using AI.
+ * Returns { location, city } or null.
+ */
+export async function reverseGeocode(lat: number, lon: number) {
+  try {
+    if (!OPENROUTER_API_KEY || OPENROUTER_API_KEY === 'sk-or-v1-...') {
+      throw new Error('Invalid OpenRouter API Key.');
+    }
+
+    const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'Iran Revolution Memorial'
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_MODEL,
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert reverse geocoding assistant for Iran.
+            Given Latitude and Longitude coordinates, identify the specific neighborhood/location and city in Iran.
+            
+            Return ONLY a valid JSON object:
+            {
+              "location": "neighborhood or street name",
+              "city": "city name"
+            }
+
+            Do not include any other text or markdown code blocks.`
+          },
+          {
+            role: 'user',
+            content: `What is the location for coordinates: ${lat}, ${lon}?`
+          }
+        ],
+        temperature: 0.1
+      })
+    });
+
+    if (!aiResponse.ok) throw new Error('AI Reverse Geocoding Service Error');
+
+    const result = await aiResponse.json();
+    const resultText = result.choices[0].message.content.trim();
+    const cleanJson = resultText.replace(/```json|```/g, '').trim();
+    return JSON.parse(cleanJson) as { location: string; city: string };
+  } catch (error) {
+    console.error('AI Reverse Geocoding Error:', error);
+    return null;
+  }
+}

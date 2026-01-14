@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import { extractXPostImage } from './imageExtractor'
-import { translateMemorialData } from './ai'
+import { translateMemorialData, geocodeLocation, reverseGeocode } from './ai'
 import type { MemorialEntry } from './types'
 import type { Database } from './database.types'
 
@@ -257,12 +257,64 @@ export async function batchTranslateMemorials(): Promise<{ success: boolean; cou
     }
     
     return { success: true, count: updatedCount }
+   } catch (e) {
+     return { success: false, count: 0, error: e instanceof Error ? e.message : 'Unknown error' }
+   }
+ }
+ 
+ export async function batchSyncLocationCoords(): Promise<{ success: boolean; count: number; error?: string }> {
+  if (!supabase) return { success: false, count: 0, error: 'Supabase not configured' }
+  
+  try {
+    const { data: memorials, error: fetchError } = await supabase.from('memorials').select('*')
+    if (fetchError) throw fetchError
+    
+    const rows = (memorials || []) as MemorialRow[]
+    let updatedCount = 0
+
+    for (const m of rows) {
+      const update: Record<string, unknown> = {}
+      const coords = m.coords as { lat: number; lon: number } | null
+
+      // Case 1: Has Location but missing/default Coordinates
+      if (m.city && m.location && (!coords || (coords.lat === 35.6892 && coords.lon === 51.3890))) {
+        const newCoords = await geocodeLocation(m.city, m.location)
+        if (newCoords) update.coords = newCoords
+      }
+      // Case 2: Has Coordinates but missing Location text
+      else if (coords && (!m.location || m.location === '')) {
+        const info = await reverseGeocode(coords.lat, coords.lon)
+        if (info) {
+          update.location = info.location
+          if (!m.city) update.city = info.city
+        }
+      }
+
+      if (Object.keys(update).length > 0) {
+        const client = supabase as unknown as { 
+          from: (t: string) => { 
+            update: (d: Record<string, unknown>) => { 
+              eq: (f: string, v: string) => Promise<{ error: unknown }> 
+            } 
+          } 
+        }
+        const { error: updateError } = await client
+          .from('memorials')
+          .update(update)
+          .eq('id', m.id)
+          
+        if (!updateError) updatedCount++
+        await new Promise(r => setTimeout(r, 500))
+      }
+    }
+    
+    return { success: true, count: updatedCount }
   } catch (e) {
     return { success: false, count: 0, error: e instanceof Error ? e.message : 'Unknown error' }
   }
 }
 
-async function fetchStaticMemorials(): Promise<MemorialEntry[]> {
+ async function fetchStaticMemorials(): Promise<MemorialEntry[]> {
   const response = await fetch(`${import.meta.env.BASE_URL}data/memorials.json`)
   return response.json()
 }

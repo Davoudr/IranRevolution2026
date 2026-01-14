@@ -1,6 +1,14 @@
 import { supabase } from './modules/supabase'
-import { fetchMemorials, verifyMemorial, deleteMemorial, submitMemorial, batchUpdateImages, batchTranslateMemorials } from './modules/dataService'
-import { extractMemorialData } from './modules/ai'
+import { 
+  fetchMemorials, 
+  verifyMemorial, 
+  deleteMemorial, 
+  submitMemorial, 
+  batchUpdateImages, 
+  batchTranslateMemorials, 
+  batchSyncLocationCoords 
+} from './modules/dataService'
+import { extractMemorialData, geocodeLocation } from './modules/ai'
 import { extractXPostImage } from './modules/imageExtractor'
 import type { MemorialEntry } from './modules/types'
 
@@ -28,8 +36,10 @@ const output = document.getElementById('output') as HTMLPreElement
 const aiUrlInput = document.getElementById('ai-url') as HTMLInputElement
 const aiExtractBtn = document.getElementById('ai-extract-btn') as HTMLButtonElement
 const extractImgBtn = document.getElementById('extract-img-btn') as HTMLButtonElement
+const syncCoordsBtn = document.getElementById('sync-coords-btn') as HTMLButtonElement
 const batchImgBtn = document.getElementById('batch-img-btn') as HTMLButtonElement
 const batchTranslateBtn = document.getElementById('batch-translate-btn') as HTMLButtonElement
+const batchCoordsBtn = document.getElementById('batch-coords-btn') as HTMLButtonElement
 const aiStatus = document.getElementById('ai-status') as HTMLParagraphElement
 const jsonImportArea = document.getElementById('json-import') as HTMLTextAreaElement
 const jsonImportBtn = document.getElementById('json-import-btn') as HTMLButtonElement
@@ -253,6 +263,37 @@ extractImgBtn.addEventListener('click', async () => {
   }
 })
 
+syncCoordsBtn.addEventListener('click', async () => {
+  const city = (document.getElementById('city') as HTMLInputElement).value.trim()
+  const location = (document.getElementById('location') as HTMLInputElement).value.trim()
+  
+  if (!city) {
+    alert('Please enter a city first.')
+    return
+  }
+
+  syncCoordsBtn.disabled = true
+  const originalText = syncCoordsBtn.textContent
+  syncCoordsBtn.textContent = '...'
+  
+  try {
+    const coords = await geocodeLocation(city, location)
+    if (coords) {
+      const latInput = document.getElementById('lat') as HTMLInputElement
+      const lonInput = document.getElementById('lon') as HTMLInputElement
+      latInput.value = coords.lat.toString()
+      lonInput.value = coords.lon.toString()
+    } else {
+      alert('Could not find coordinates for this location.')
+    }
+  } catch (error) {
+    alert('Geocoding failed.')
+  } finally {
+    syncCoordsBtn.disabled = false
+    syncCoordsBtn.textContent = originalText
+  }
+})
+
 batchImgBtn.addEventListener('click', async () => {
   if (!confirm('This will search all existing memorials for X posts and try to extract images for those that don\'t have one. This might take a while. Continue?')) return
 
@@ -294,6 +335,28 @@ batchTranslateBtn.addEventListener('click', async () => {
   } finally {
     batchTranslateBtn.disabled = false
     batchTranslateBtn.textContent = 'AI Fix Missing Persian Translations'
+  }
+})
+
+batchCoordsBtn.addEventListener('click', async () => {
+  if (!confirm('This will use AI to sync locations and coordinates for all memorials. Continue?')) return
+
+  batchCoordsBtn.disabled = true
+  batchCoordsBtn.textContent = 'AI Syncing...'
+  
+  try {
+    const { success, count, error } = await batchSyncLocationCoords()
+    if (success) {
+      alert(`Successfully synced ${count} memorials!`)
+      loadSubmissions()
+    } else {
+      alert(`Batch sync failed: ${error}`)
+    }
+  } catch (error) {
+    alert('Batch sync failed.')
+  } finally {
+    batchCoordsBtn.disabled = false
+    batchCoordsBtn.textContent = 'AI Sync Location/Coordinates'
   }
 })
 
