@@ -318,6 +318,22 @@
   ]
 },
 {
+  "name": "Ali Abbasi",
+  "city": "Tehran",
+  "date": "2026-01-14",
+  "location": "Tehran",
+  "bio": "18-year-old Kurdish worker from Gilan-e Gharb, Kermanshah, murdered for demanding freedom.",
+  "media": {
+    "xPost": "https://x.com/NoaMagid/status/2011324023930843530?s=20"
+  },
+  "references": [
+    {
+      "label": "X Post",
+      "url": "https://x.com/NoaMagid/status/2011324023930843530?s=20"
+    }
+  ]
+},
+{
   "name": "علی عنبرستانی",
   "city": "سبزوار",
   "date": "",
