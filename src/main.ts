@@ -6,13 +6,21 @@ import { setupSearch } from './modules/search'
 import { extractMemorialData } from './modules/ai'
 import { fetchMemorials, submitMemorial } from './modules/dataService'
 import { initTwitter } from './modules/twitter'
+import { supabase } from './modules/supabase'
 
 let currentMemorials: MemorialEntry[] = []
 
 async function boot() {
   initTwitter()
   await loadTranslations(currentLanguage())
+  
+  console.log('Fetching memorials...')
   const memorials = await fetchMemorials()
+  console.log(`Fetched ${memorials.length} memorials`)
+  if (memorials.length > 0) {
+    console.log('Sample memorial:', memorials[0])
+  }
+  
   currentMemorials = memorials
 
   initUiText()
@@ -28,6 +36,35 @@ async function boot() {
     clearDetails(filtered)
   })
   onMarkerSelected((entry) => renderDetails(entry))
+
+  setupRealtime()
+}
+
+function setupRealtime() {
+  if (!supabase) return
+
+  supabase
+    .channel('memorials-realtime')
+    .on('postgres_changes', { 
+      event: '*', 
+      schema: 'public', 
+      table: 'memorials' 
+    }, async () => {
+       
+       // Re-fetch all memorials to ensure consistent state (including order and verification)
+      const updatedMemorials = await fetchMemorials()
+      currentMemorials = updatedMemorials
+      
+      // Update the map and search
+      plotMarkers(currentMemorials)
+      setupSearch(currentMemorials, (filtered) => {
+        plotMarkers(filtered)
+        const aside = document.getElementById('details-panel') as HTMLElement
+        aside.classList.remove('active')
+        clearDetails(filtered)
+      })
+    })
+    .subscribe()
 }
 
 function initMobileMenu() {

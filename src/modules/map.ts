@@ -32,7 +32,11 @@ export function initMap() {
 }
 
 export function plotMarkers(entries: MemorialEntry[]) {
-  if (!markersLayer) return
+  console.log(`Plotting ${entries.length} markers`)
+  if (!markersLayer) {
+    console.error('Markers layer not initialized')
+    return
+  }
   markersLayer.clearLayers()
 
   const seenCoords = new Set<string>()

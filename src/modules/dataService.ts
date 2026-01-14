@@ -22,15 +22,16 @@ export async function fetchMemorials(includeUnverified = false): Promise<Memoria
     const { data, error } = await query
 
     if (error) {
+      console.error('Supabase fetch error:', error)
       return fetchStaticMemorials()
     }
 
-    // Only fallback if data is null/undefined (unexpected error)
     if (data === null) {
+      console.warn('Supabase returned null data')
       return fetchStaticMemorials()
     }
 
-    // If we are in Supabase mode and have data (even empty array), return it
+    console.log(`Supabase returned ${data.length} memorials`)
     return data.map(mapRowToEntry)
   } catch (e) {
     return fetchStaticMemorials()
@@ -135,7 +136,7 @@ async function fetchStaticMemorials(): Promise<MemorialEntry[]> {
   return response.json()
 }
 
-function mapRowToEntry(row: MemorialRow): MemorialEntry {
+export function mapRowToEntry(row: MemorialRow): MemorialEntry {
   return {
     id: row.id,
     name: row.name,
