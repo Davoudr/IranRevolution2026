@@ -383,6 +383,43 @@ main {
   border-color: var(--accent);
 }
 
+/* Hamburger Menu */
+.menu-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 2rem;
+  height: 2rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 2001;
+}
+
+.menu-toggle span {
+  width: 2rem;
+  height: 0.25rem;
+  background: #fff;
+  border-radius: 10px;
+  transition: all 0.3s linear;
+  position: relative;
+  transform-origin: 1px;
+}
+
+.menu-toggle.open span:first-child {
+  transform: rotate(45deg);
+}
+
+.menu-toggle.open span:nth-child(2) {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.menu-toggle.open span:nth-child(3) {
+  transform: rotate(-45deg);
+}
+
 /* Modal */
 .modal-overlay {
   position: fixed;
@@ -688,5 +725,64 @@ footer a:hover {
     transform: translateY(100%);
     left: 0;
     right: 0;
+  }
+
+  .menu-toggle {
+    display: flex;
+  }
+
+  .controls {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--header-bg);
+    backdrop-filter: blur(20px);
+    flex-direction: column;
+    padding: 2rem;
+    border-bottom: 1px solid var(--border);
+    animation: slideDown 0.3s ease-out forwards;
+    z-index: 1999;
+  }
+
+  .controls.open {
+    display: flex;
+  }
+
+  .control-group {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+
+  .control-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .control-group input,
+  .control-group select,
+  .control-group button {
+    width: 100%;
+    padding: 0.8rem;
+    font-size: 1rem;
+  }
+
+  .logo-area {
+    gap: 0.5rem;
+  }
+
+  #site-title {
+    font-size: 1.1rem;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }

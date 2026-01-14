@@ -17,6 +17,7 @@ async function boot() {
   initMap()
   plotMarkers(memorials)
   initContributionForm()
+  initMobileMenu()
   setupSearch(memorials, (filtered) => {
     plotMarkers(filtered)
     const aside = document.getElementById('details-panel') as HTMLElement
@@ -24,6 +25,42 @@ async function boot() {
     clearDetails(filtered)
   })
   onMarkerSelected((entry) => renderDetails(entry))
+}
+
+function initMobileMenu() {
+  const menuToggle = document.getElementById('menu-toggle')
+  const navControls = document.getElementById('nav-controls')
+
+  if (!menuToggle || !navControls) return
+
+  menuToggle.addEventListener('click', () => {
+    const isOpen = menuToggle.classList.contains('open')
+    menuToggle.classList.toggle('open')
+    navControls.classList.toggle('open')
+    menuToggle.setAttribute('aria-expanded', String(!isOpen))
+  })
+
+  // Close menu when clicking outside
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement
+    if (!menuToggle.contains(target) && !navControls.contains(target)) {
+      menuToggle.classList.remove('open')
+      navControls.classList.remove('open')
+      menuToggle.setAttribute('aria-expanded', 'false')
+    }
+  })
+
+  // Close menu when a link or button inside is clicked
+  navControls.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement
+    if (target.tagName === 'BUTTON' || target.tagName === 'A' || target.tagName === 'SELECT') {
+      if (target.tagName !== 'SELECT') {
+        menuToggle.classList.remove('open')
+        navControls.classList.remove('open')
+        menuToggle.setAttribute('aria-expanded', 'false')
+      }
+    }
+  })
 }
 
 function initUiText() {

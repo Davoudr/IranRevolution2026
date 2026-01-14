@@ -116,5 +116,23 @@
         "url": "https://x.com/visegrad24/status/2011270365180502209"
       }
     ]
+  },
+  {
+    "id": "mahsa-dezfulian-kermanshahi",
+    "name": "Dr. Mahsa Dezfulian Kermanshahi",
+    "city": "Tehran",
+    "location": "Tehran",
+    "date": "2026-01-13",
+    "coords": { "lat": 35.6892, "lon": 51.389 },
+    "bio": "Dr. Mahsa Dezfulian Kermanshahi was killed by direct fire in Tehran.",
+    "media": {
+      "xPost": "https://x.com/DamDami/status/2011088032607449335?s=20"
+    },
+    "references": [
+      {
+        "label": "X Post by DamDam",
+        "url": "https://x.com/DamDami/status/2011088032607449335?s=20"
+      }
+    ]
   }
 ]
