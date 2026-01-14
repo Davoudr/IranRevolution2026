@@ -333,6 +333,24 @@
     }
   ]
 },
+
+
+{
+  "name": "Ribin Moradi",
+  "city": "Tehran, Tehran",
+  "date": "2026-01-13",
+  "location": "Tehran",
+  "bio": "Rebin Moradi, a 17-year-old child from Salas Babajani, was killed by direct gunfire from government forces.\n",
+  "media": {
+    "xPost": "https://x.com/indypersian/status/2011320861119173063?s=20"
+  },
+  "references": [
+    {
+      "label": "Reference",
+      "url": "https://x.com/indypersian/status/2011320861119173063?s=20"
+    }
+  ]
+},
 {
   "name": "علی عنبرستانی",
   "city": "سبزوار",
