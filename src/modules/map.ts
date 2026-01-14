@@ -19,7 +19,7 @@ export function initMap() {
     center: [32.4279, 53.688], // Center of Iran
     zoom: 5,
     minZoom: 5,
-    maxZoom: 10,
+    maxZoom: 18,
     zoomControl: true,
     attributionControl: true
   })
@@ -33,9 +33,11 @@ export function initMap() {
   
   markersLayer = L.markerClusterGroup({
     showCoverageOnHover: false,
-    maxClusterRadius: 40,
+    maxClusterRadius: 50,
     spiderfyOnMaxZoom: true,
-    disableClusteringAtZoom: 14,
+    zoomToBoundsOnClick: true,
+    spiderfyDistanceMultiplier: 2,
+    disableClusteringAtZoom: 16,
     iconCreateFunction: (cluster: L.MarkerCluster) => {
       const count = cluster.getChildCount();
       return L.divIcon({
@@ -53,9 +55,29 @@ export function plotMarkers(entries: MemorialEntry[]) {
   }
   markersLayer.clearLayers()
 
+  // Group entries by exact coordinates to identify overlaps
+  const coordGroups = new Map<string, number>()
+
   entries.forEach((entry) => {
     if (!entry.coords) return
     const { lat, lon } = entry.coords
+    const coordKey = `${lat.toFixed(6)},${lon.toFixed(6)}`
+    
+    // Count how many markers are at this exact location
+    const count = coordGroups.get(coordKey) || 0
+    coordGroups.set(coordKey, count + 1)
+
+    // Apply a small random jitter if there are multiple markers at the same spot
+    // This spreads them out slightly so they don't sit perfectly on top of each other
+    let finalLat = lat
+    let finalLon = lon
+    
+    if (count > 0) {
+      // Offset by roughly 50-100 meters randomly for better separation
+      const jitterAmount = 0.0008 
+      finalLat += (Math.random() - 0.5) * jitterAmount * count
+      finalLon += (Math.random() - 0.5) * jitterAmount * count
+    }
 
     // Create a marker with a divIcon that looks like the red dot
     const icon = L.divIcon({
@@ -65,7 +87,7 @@ export function plotMarkers(entries: MemorialEntry[]) {
       iconAnchor: [8, 8]
     })
 
-    const marker = L.marker([lat, lon], { icon })
+    const marker = L.marker([finalLat, finalLon], { icon })
 
     // Use bilingual fields for tooltip
     const isFa = currentLanguage() === 'fa'
