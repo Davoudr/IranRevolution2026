@@ -266,6 +266,22 @@
   ]
 },
 {
+  "name": "Parsa Saffar",
+  "city": "Mashhad",
+  "date": "2023-01-10",
+  "location": "",
+  "bio": "Medical student at Mashhad University of Medical Sciences, graduate of NODET.",
+  "media": {
+    "xPost": "https://x.com/longlosthills/status/2011412971725987840?s=20"
+  },
+  "references": [
+    {
+      "label": "X Post",
+      "url": "https://x.com/longlosthills/status/2011412971725987840?s=20"
+    }
+  ]
+},
+{
   "name": "محمد امین حسینی",
   "city": "مشهد",
   "date": "2026-01-14",
