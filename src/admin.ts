@@ -340,7 +340,11 @@ async function handleDelete(id: string) {
 entryForm.addEventListener('submit', async (e) => {
   e.preventDefault()
   
-  const references = (document.getElementById('references') as HTMLTextAreaElement).value.trim()
+  const name = (document.getElementById('name') as HTMLInputElement).value.trim()
+  const xPost = (document.getElementById('xPost') as HTMLInputElement).value.trim()
+  const rawReferences = (document.getElementById('references') as HTMLTextAreaElement).value.trim()
+  
+  const references = rawReferences
     .split('\n')
     .map(line => {
       const [label, url] = line.split('|').map(s => s.trim())
@@ -349,9 +353,19 @@ entryForm.addEventListener('submit', async (e) => {
     })
     .filter(Boolean) as { label: string, url: string }[]
 
+  if (!name) {
+    alert('Name is required.')
+    return
+  }
+
+  if (!xPost && references.length === 0) {
+    alert('At least one link (X Post URL or a Reference) is required.')
+    return
+  }
+
   const entry: Partial<MemorialEntry> = {
     id: editIdInput.value || undefined,
-    name: (document.getElementById('name') as HTMLInputElement).value.trim(),
+    name,
     name_fa: (document.getElementById('name_fa') as HTMLInputElement).value.trim() || undefined,
     city: (document.getElementById('city') as HTMLInputElement).value.trim(),
     city_fa: (document.getElementById('city_fa') as HTMLInputElement).value.trim() || undefined,
@@ -368,7 +382,7 @@ entryForm.addEventListener('submit', async (e) => {
       .split('\n').map(s => s.trim()).filter(Boolean),
     media: {
       photo: (document.getElementById('photo') as HTMLInputElement).value.trim() || undefined,
-      xPost: (document.getElementById('xPost') as HTMLInputElement).value.trim() || undefined
+      xPost: xPost || undefined
     },
     references: references.length > 0 ? references : undefined,
     verified: (document.getElementById('verified') as HTMLInputElement).checked

@@ -326,14 +326,14 @@ function initContributionForm() {
             </div>
             <div class="form-group">
               <label>${t('contribute.city')}</label>
-              <input type="text" name="city" required placeholder="City">
+              <input type="text" name="city" placeholder="City">
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label>${t('contribute.date')}</label>
-              <input type="date" name="date" required>
+              <input type="date" name="date">
             </div>
             <div class="form-group">
               <label>${t('contribute.location')}</label>

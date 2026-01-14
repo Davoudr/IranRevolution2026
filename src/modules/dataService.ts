@@ -102,7 +102,7 @@ export async function submitMemorial(entry: Partial<MemorialEntry>): Promise<{ s
       city_fa: entry.city_fa || null,
       location: entry.location || '',
       location_fa: entry.location_fa || null,
-      date: entry.date,
+      date: entry.date || new Date().toISOString().split('T')[0],
       bio: entry.bio || '',
       bio_fa: entry.bio_fa || null,
       coords: (entry.coords || { lat: 35.6892, lon: 51.3890 }) as Database['public']['Tables']['memorials']['Insert']['coords'],
