@@ -35,6 +35,7 @@ export function plotMarkers(entries: MemorialEntry[]) {
   markersLayer.clearLayers()
 
   entries.forEach((entry) => {
+    if (!entry.coords) return
     const { lat, lon } = entry.coords
     
     // Create a custom red dot marker
@@ -65,7 +66,7 @@ export function onMarkerSelected(cb: (entry: MemorialEntry) => void) {
 }
 
 export function focusOnMarker(entry: MemorialEntry) {
-  if (map) {
+  if (map && entry.coords) {
     map.setView([entry.coords.lat, entry.coords.lon], 8)
   }
 }

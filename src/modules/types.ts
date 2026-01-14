@@ -1,10 +1,10 @@
 export type MemorialEntry = {
-  id: string
+  id?: string
   name: string
   city: string
   location: string
   date: string
-  coords: { lat: number; lon: number }
+  coords?: { lat: number; lon: number }
   bio?: string
   testimonials?: string[]
   media?: {

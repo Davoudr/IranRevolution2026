@@ -124,7 +124,7 @@ function renderDetails(entry: MemorialEntry) {
       </div>
 
       <div class="report-section">
-        <a href="https://github.com/atakhadiviom/IranRevolution2026/issues/new?title=Report+Issue:+${encodeURIComponent(entry.name)}&body=${encodeURIComponent(`I am reporting an issue with the entry for ${entry.name} (ID: ${entry.id}).\n\nReason:\n[Please describe the problem here, e.g., wrongly added, incorrect date, etc.]`)}" 
+        <a href="https://github.com/atakhadiviom/IranRevolution2026/issues/new?title=Report+Issue:+${encodeURIComponent(entry.name)}&body=${encodeURIComponent(`I am reporting an issue with the entry for ${entry.name}${entry.id ? ` (ID: ${entry.id})` : ''}.\n\nReason:\n[Please describe the problem here, e.g., wrongly added, incorrect date, etc.]`)}" 
            target="_blank" class="report-link">
            🚩 ${t('details.reportIssue')}
         </a>
@@ -172,9 +172,13 @@ function renderDetails(entry: MemorialEntry) {
 
   // Trigger Twitter widget rendering if present
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (entry.media?.xPost && (window as any).twttr) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).twttr.widgets.load(panel)
+  const twttr = (window as any).twttr
+  if (entry.media?.xPost && twttr) {
+    // If the widget script is already loaded, we can just call load()
+    // but sometimes it's better to ensure it's fully initialized
+    if (twttr.widgets) {
+      twttr.widgets.load(panel)
+    }
   }
 
   document.getElementById('close-details')?.addEventListener('click', () => {
@@ -184,12 +188,13 @@ function renderDetails(entry: MemorialEntry) {
   
   const candleBtn = document.getElementById('light-candle')
   const candleCount = document.getElementById('candle-count')
-  let count = Number(localStorage.getItem(`candle-${entry.id}`) || 0)
+  const entryId = entry.id || entry.name.toLowerCase().replace(/\s+/g, '-')
+  let count = Number(localStorage.getItem(`candle-${entryId}`) || 0)
   if (candleCount) candleCount.textContent = `${count} ${t('details.candlesLit')}`
   
   candleBtn?.addEventListener('click', () => {
     count++
-    localStorage.setItem(`candle-${entry.id}`, String(count))
+    localStorage.setItem(`candle-${entryId}`, String(count))
     if (candleCount) candleCount.textContent = `${count} ${t('details.candlesLit')}`
     candleBtn.classList.add('lit')
   })
@@ -397,6 +402,11 @@ function initContributionForm() {
         date: fd.get('date'),
         location: fd.get('location'),
         bio: fd.get('bio'),
+        media: {
+          xPost: fd.get('refUrl')?.toString().includes('x.com') || fd.get('refUrl')?.toString().includes('twitter.com') 
+            ? fd.get('refUrl') 
+            : undefined
+        },
         references: [{
           label: fd.get('refLabel') || 'Reference',
           url: fd.get('refUrl')
