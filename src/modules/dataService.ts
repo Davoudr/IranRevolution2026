@@ -8,6 +8,7 @@ type MemorialInsert = Database['public']['Tables']['memorials']['Insert']
 type MemorialRow = Database['public']['Tables']['memorials']['Row']
 
 export async function fetchMemorials(includeUnverified = false): Promise<MemorialEntry[]> {
+  if (!supabase) return fetchStaticMemorials()
   try {
     let query = supabase
       .from('memorials')
@@ -37,6 +38,7 @@ export async function fetchMemorials(includeUnverified = false): Promise<Memoria
 }
 
 export async function verifyMemorial(id: string): Promise<{ success: boolean; error?: string }> {
+  if (!supabase) return { success: false, error: 'Supabase not configured' }
   try {
     const { error } = await supabase
       .schema('public')
@@ -52,6 +54,7 @@ export async function verifyMemorial(id: string): Promise<{ success: boolean; er
 }
 
 export async function deleteMemorial(id: string): Promise<{ success: boolean; error?: string }> {
+  if (!supabase) return { success: false, error: 'Supabase not configured' }
   try {
     const { error } = await supabase
       .schema('public')
@@ -67,6 +70,11 @@ export async function deleteMemorial(id: string): Promise<{ success: boolean; er
 }
 
 export async function submitMemorial(entry: Partial<MemorialEntry>): Promise<{ success: boolean; error?: string }> {
+  if (!supabase) {
+    // For community contributions, we generate JSON output which is handled in the UI
+    // But this function is also used for saving, so we check if it's available
+    return { success: false, error: 'Supabase not configured. Please use the "Generate Submission" button.' }
+  }
   try {
     if (!entry.name || !entry.city || !entry.date) {
       return { success: false, error: 'Name, City, and Date are required.' }

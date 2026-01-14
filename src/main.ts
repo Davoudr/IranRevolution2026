@@ -5,10 +5,12 @@ import type { MemorialEntry } from './modules/types'
 import { setupSearch } from './modules/search'
 import { extractMemorialData } from './modules/ai'
 import { fetchMemorials, submitMemorial } from './modules/dataService'
+import { initTwitter } from './modules/twitter'
 
 let currentMemorials: MemorialEntry[] = []
 
 async function boot() {
+  initTwitter()
   await loadTranslations(currentLanguage())
   const memorials = await fetchMemorials()
   currentMemorials = memorials

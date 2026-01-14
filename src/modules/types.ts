@@ -31,6 +31,7 @@ export interface TwitterWidgets {
 export interface Twitter {
   ready: (callback: (twttr: { widgets: TwitterWidgets }) => void) => void;
   widgets: TwitterWidgets;
+  _e?: unknown[];
 }
 
 declare global {
