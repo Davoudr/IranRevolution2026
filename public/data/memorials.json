@@ -584,5 +584,27 @@
         "url": "https://x.com/longlosthills/status/2010915502999077031?s=20"
       }
     ]
+  },
+  {
+    "id": "sorena-golgoun",
+    "name": "Sorena Golgoun",
+    "name_fa": "سورنا گلگون",
+    "city": "Ramsar",
+    "city_fa": "رامسر",
+    "location": "Shahrsavar",
+    "location_fa": "شهسوار",
+    "date": "2025-01-09",
+    "coords": { "lat": 36.9178, "lon": 50.6364 },
+    "bio": "18-year-old student murdered by regime forces with a direct shot. From a family with two martyrs in the Iran-Iraq war.",
+    "bio_fa": "دانش‌آموز ۱۸ ساله‌ای که با شلیک مستقیم نیروهای رژیم کشته شد. او از خانواده‌ای بود که دو شهید در جنگ ایران و عراق داشتند.",
+    "media": {
+      "xPost": "https://x.com/longlosthills/status/2011174614458675541?s=20"
+    },
+    "references": [
+      {
+        "label": "X Post",
+        "url": "https://x.com/longlosthills/status/2011174614458675541?s=20"
+      }
+    ]
   }
 ]
