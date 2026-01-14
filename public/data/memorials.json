@@ -1,5 +1,42 @@
 [
   {
+    "id": "mohammad-qasem-rusta",
+    "name": "Mohammad Qasem Rusta",
+    "name_fa": "محمد قاسم روستا",
+    "city": "Marvdasht",
+    "city_fa": "مرودشت",
+    "location": "Marvdasht, Fars Province",
+    "location_fa": "مرودشت، استان فارس",
+    "date": "2026-01-09",
+    "coords": { "lat": 29.8742, "lon": 52.8025 },
+    "bio": "Killed by security forces during the nationwide protests in Marvdasht.",
+    "bio_fa": "در جریان اعتراضات سراسری در مرودشت توسط نیروهای امنیتی کشته شد.",
+    "references": [
+      { "label": "HRANA Report", "url": "https://www.en-hrana.org/detailed-report-on-the-ninth-day-of-protests-more-than-1200-protesters-arrested/" }
+    ]
+  },
+  {
+    "id": "mansour-behrouzi",
+    "name": "Mansour Behrouzi",
+    "name_fa": "منصور بهروزی",
+    "city": "Unknown",
+    "city_fa": "نامشخص",
+    "location": "Unknown",
+    "date": "2026-01-10",
+    "coords": { "lat": 35.6892, "lon": 51.3890 },
+    "bio": "Arrested by IRGC for anti-regime activities; brother is a political refugee in Turkey.",
+    "bio_fa": "دستگیر شده توسط سپاه پاسداران به دلیل فعالیت‌های ضد رژیم؛ برادر او پناهنده سیاسی در ترکیه است.",
+    "media": { 
+      "xPost": "https://x.com/Savakzadeh/status/2011419152871719199?s=20" 
+    },
+    "references": [
+      { 
+        "label": "X Post", 
+        "url": "https://x.com/Savakzadeh/status/2011419152871719199?s=20" 
+      }
+    ]
+  },
+  {
     "id": "mahsa-amini",
     "name": "Mahsa (Jina) Amini",
     "name_fa": "مهسا (ژینا) امینی",

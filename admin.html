@@ -3,100 +3,265 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Submission</title>
+    <title>Admin Dashboard - Iran Revolution 2026</title>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <style>
-      body { font-family: system-ui, Avenir, Helvetica, Arial, sans-serif; margin: 2rem; max-width: 900px; }
+      :root {
+        --primary: #007bff;
+        --primary-hover: #0056b3;
+        --bg: #f8f9fa;
+        --card: #ffffff;
+        --text: #333;
+        --muted: #666;
+        --border: #ddd;
+        --success: #28a745;
+        --danger: #dc3545;
+      }
+      body { 
+        font-family: system-ui, -apple-system, sans-serif; 
+        margin: 0; 
+        background: var(--bg);
+        color: var(--text);
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+      .hidden { display: none !important; }
+      
+      /* Login styles */
+      .login-container {
+        max-width: 400px;
+        margin: 100px auto;
+        padding: 2rem;
+        background: var(--card);
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
+      .login-container h1 { margin-top: 0; text-align: center; }
+      
+      /* Dashboard styles */
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+      }
+      .card {
+        background: var(--card);
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
+      }
+      
       form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-      label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 0.25rem; }
-      input, textarea { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #ddd; border-radius: 8px; }
-      textarea { min-height: 120px; grid-column: 1 / -1; }
+      label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25rem; }
+      input, textarea { 
+        width: 100%; 
+        padding: 0.6rem 0.8rem; 
+        border: 1px solid var(--border); 
+        border-radius: 8px;
+        font-size: 1rem;
+      }
+      textarea { min-height: 100px; grid-column: 1 / -1; }
+      
       .actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
       button { 
         padding: 0.6rem 1.2rem; 
         border-radius: 8px; 
-        border: 1px solid #ddd; 
+        border: 1px solid var(--border); 
         background: #fff; 
         cursor: pointer; 
         font-weight: 500;
         transition: all 0.2s;
       }
       button:hover { background: #f0f0f0; border-color: #bbb; }
-      button[type="submit"] { background: #007bff; color: white; border-color: #0056b3; }
-      button[type="submit"]:hover { background: #0056b3; }
-      pre { background: #f6f6f6; padding: 1rem; border-radius: 8px; overflow: auto; }
+      button.primary { background: var(--primary); color: white; border-color: var(--primary-hover); }
+      button.primary:hover { background: var(--primary-hover); }
+      button.danger { color: var(--danger); border-color: var(--danger); }
+      button.danger:hover { background: var(--danger); color: white; }
+      
+      /* Submissions list */
+      .submission-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+      }
+      .submission-item:last-child { border-bottom: none; }
+      .submission-info h4 { margin: 0 0 0.25rem 0; }
+      .submission-info p { margin: 0; font-size: 0.9rem; color: var(--muted); }
+      
+      .tab-container { display: flex; gap: 1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); }
+      .tab { padding: 0.5rem 1rem; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); }
+      .tab.active { border-color: var(--primary); color: var(--primary); font-weight: bold; }
+
+      .status-badge {
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+      .status-pending { background: #fff3cd; color: #856404; }
+      .status-verified { background: #d4edda; color: #155724; }
+
+      pre { background: #f6f6f6; padding: 1rem; border-radius: 8px; overflow: auto; max-height: 200px; }
     </style>
   </head>
   <body>
-    <h1>Admin: Add Memorial Entry</h1>
-    <p>This tool validates a submission and generates JSON to add via Pull Request.</p>
-    <form id="entry-form">
-      <div>
-        <label for="name">Name (English)</label>
-        <input id="name" required />
+    <div class="container">
+      <!-- Login Section -->
+      <div id="login-section" class="login-container hidden">
+        <h1>Admin Login</h1>
+        <form id="login-form" style="display: block;">
+          <div style="margin-bottom: 1rem;">
+            <label for="email">Email</label>
+            <input type="email" id="email" required />
+          </div>
+          <div style="margin-bottom: 1.5rem;">
+            <label for="password">Password</label>
+            <input type="password" id="password" required />
+          </div>
+          <button type="submit" class="primary" style="width: 100%;">Login</button>
+        </form>
+        <p id="login-error" style="color: var(--danger); margin-top: 1rem; text-align: center;" class="hidden"></p>
       </div>
-      <div>
-        <label for="name_fa">Name (Persian)</label>
-        <input id="name_fa" />
+
+      <!-- Dashboard Section -->
+      <div id="admin-section" class="hidden">
+        <header>
+          <h1>Admin Dashboard</h1>
+          <div class="actions">
+            <span id="user-email" style="margin-right: 1rem; color: var(--muted);"></span>
+            <button id="logout-btn">Logout</button>
+          </div>
+        </header>
+
+        <div class="card">
+          <h2>Quick Import</h2>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <!-- AI Extract Section -->
+            <div style="border-right: 1px solid var(--border); padding-right: 1.5rem;">
+              <h3>✨ AI Extraction</h3>
+              <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem;">
+                Paste a news URL or X post to auto-fill the form.
+              </p>
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="url" id="ai-url" placeholder="https://x.com/..." style="flex: 1;" />
+                <button id="ai-extract-btn" class="primary">Extract</button>
+              </div>
+              <p id="ai-status" style="font-size: 0.85rem; margin-top: 0.5rem;" class="hidden"></p>
+            </div>
+
+            <!-- JSON Import Section -->
+            <div>
+              <h3>📄 JSON Import</h3>
+              <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem;">
+                Paste a raw JSON object to populate the fields.
+              </p>
+              <textarea id="json-import" placeholder='{ "name": "...", "city": "..." }' style="min-height: 40px; margin-bottom: 0.5rem;"></textarea>
+              <button id="json-import-btn" style="width: 100%;">Import JSON</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="tab-container">
+            <div id="tab-unverified" class="tab active">Unverified Submissions (<span id="count-unverified">0</span>)</div>
+            <div id="tab-verified" class="tab">Verified Memorials (<span id="count-verified">0</span>)</div>
+          </div>
+          
+          <div id="unverified-section">
+            <div id="submissions-list">
+              <p style="text-align: center; color: var(--muted); padding: 2rem;">Loading submissions...</p>
+            </div>
+          </div>
+
+          <div id="verified-section" class="hidden">
+            <div id="verified-list">
+              <p style="text-align: center; color: var(--muted); padding: 2rem;">Loading verified memorials...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Add/Edit Memorial Entry</h2>
+          <form id="entry-form">
+            <input type="hidden" id="edit-id" />
+            <div>
+              <label for="name">Name (English)</label>
+              <input id="name" required />
+            </div>
+            <div>
+              <label for="name_fa">Name (Persian)</label>
+              <input id="name_fa" />
+            </div>
+            <div>
+              <label for="city">City (English)</label>
+              <input id="city" required />
+            </div>
+            <div>
+              <label for="city_fa">City (Persian)</label>
+              <input id="city_fa" />
+            </div>
+            <div>
+              <label for="location">Location (English)</label>
+              <input id="location" />
+            </div>
+            <div>
+              <label for="location_fa">Location (Persian)</label>
+              <input id="location_fa" />
+            </div>
+            <div>
+              <label for="date">Date (YYYY-MM-DD)</label>
+              <input id="date" type="date" required />
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <div style="flex: 1;">
+                <label for="lat">Latitude</label>
+                <input id="lat" type="number" step="0.0001" required value="35.6892" />
+              </div>
+              <div style="flex: 1;">
+                <label for="lon">Longitude</label>
+                <input id="lon" type="number" step="0.0001" required value="51.3890" />
+              </div>
+            </div>
+            <textarea id="bio" placeholder="Biography (English, optional)"></textarea>
+            <textarea id="bio_fa" placeholder="Biography (Persian, optional)"></textarea>
+            <textarea id="testimonials" placeholder="Testimonials (English, one per line, optional)"></textarea>
+            <div>
+              <label for="photo">Photo URL (optional)</label>
+              <input id="photo" type="url" />
+            </div>
+            <div>
+              <label for="xPost">X Post URL (optional)</label>
+              <input id="xPost" type="url" placeholder="https://x.com/..." />
+            </div>
+            <div style="grid-column: 1 / -1;">
+              <label>References (Label | URL) - One per line</label>
+              <textarea id="references" placeholder="Wikipedia | https://en.wikipedia.org...&#10;BBC News | https://bbc.com..."></textarea>
+            </div>
+            <div style="grid-column: 1 / -1; display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+              <input type="checkbox" id="verified" style="width: auto;" />
+              <label for="verified" style="margin-bottom: 0;">Verified (Show on live map)</label>
+            </div>
+            <div class="actions">
+              <button type="submit" class="primary">Save Memorial</button>
+              <button type="button" id="clear-btn">Clear Form</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>JSON Output</h2>
+          <pre id="output"></pre>
+        </div>
       </div>
-      <div>
-        <label for="city">City (English)</label>
-        <input id="city" required />
-      </div>
-      <div>
-        <label for="city_fa">City (Persian)</label>
-        <input id="city_fa" />
-      </div>
-      <div>
-        <label for="location">Location (English)</label>
-        <input id="location" required />
-      </div>
-      <div>
-        <label for="location_fa">Location (Persian)</label>
-        <input id="location_fa" />
-      </div>
-      <div>
-        <label for="date">Date (YYYY-MM-DD)</label>
-        <input id="date" type="date" required />
-      </div>
-      <div>
-        <label for="lat">Latitude</label>
-        <input id="lat" type="number" step="0.0001" required />
-      </div>
-      <div>
-        <label for="lon">Longitude</label>
-        <input id="lon" type="number" step="0.0001" required />
-      </div>
-      <textarea id="bio" placeholder="Biography (English, optional)"></textarea>
-      <textarea id="bio_fa" placeholder="Biography (Persian, optional)"></textarea>
-      <textarea id="testimonials" placeholder="Testimonials (English, one per line, optional)"></textarea>
-      <textarea id="testimonials_fa" placeholder="Testimonials (Persian, one per line, optional)"></textarea>
-      <div>
-        <label for="photo">Photo URL (optional)</label>
-        <input id="photo" type="url" />
-      </div>
-      <div>
-        <label for="video">Video URL (optional)</label>
-        <input id="video" type="url" />
-      </div>
-      <div>
-        <label for="xPost">X Post URL (optional)</label>
-        <input id="xPost" type="url" placeholder="https://x.com/..." />
-      </div>
-      <div style="grid-column: 1 / -1;">
-        <label>References (Label | URL) - One per line</label>
-        <textarea id="references" placeholder="Wikipedia | https://en.wikipedia.org...&#10;BBC News | https://bbc.com..."></textarea>
-      </div>
-      <div class="actions">
-        <button type="submit">Generate JSON</button>
-      </div>
-    </form>
-    <h2>Output</h2>
-    <div class="actions" style="margin-bottom: 0.5rem;">
-      <button type="button" id="copy-btn">Copy JSON</button>
-      <button type="button" id="download">Download JSON</button>
     </div>
-    <pre id="output"></pre>
     <script type="module" src="./src/admin.ts"></script>
   </body>
 </html>

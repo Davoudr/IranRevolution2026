@@ -4,12 +4,13 @@ import { initMap, plotMarkers, onMarkerSelected } from './modules/map'
 import type { MemorialEntry } from './modules/types'
 import { setupSearch } from './modules/search'
 import { extractMemorialData } from './modules/ai'
+import { fetchMemorials, submitMemorial } from './modules/dataService'
 
 let currentMemorials: MemorialEntry[] = []
 
 async function boot() {
   await loadTranslations(currentLanguage())
-  const memorials: MemorialEntry[] = await fetch(`${import.meta.env.BASE_URL}data/memorials.json`).then((r) => r.json())
+  const memorials = await fetchMemorials()
   currentMemorials = memorials
 
   initUiText()
@@ -409,58 +410,78 @@ function initContributionForm() {
       }
     })
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault()
       const fd = new FormData(form)
-      const data = {
-        name: fd.get('name'),
-        city: fd.get('city'),
-        date: fd.get('date'),
-        location: fd.get('location'),
-        bio: fd.get('bio'),
+      const data: Partial<MemorialEntry> = {
+        name: fd.get('name') as string,
+        city: fd.get('city') as string,
+        date: fd.get('date') as string,
+        location: fd.get('location') as string,
+        bio: fd.get('bio') as string,
         media: {
           xPost: fd.get('refUrl')?.toString().includes('x.com') || fd.get('refUrl')?.toString().includes('twitter.com') 
-            ? fd.get('refUrl') 
+            ? fd.get('refUrl') as string
             : undefined
         },
         references: [{
-          label: fd.get('refLabel') || 'Reference',
-          url: fd.get('refUrl')
+          label: (fd.get('refLabel') as string) || 'Reference',
+          url: fd.get('refUrl') as string
         }]
       }
 
-      body!.innerHTML = `
-        <div class="submission-result">
-          <h3>${t('contribute.successTitle')}</h3>
-          <p>${t('contribute.successDesc')}</p>
-          <code id="json-output">${JSON.stringify(data, null, 2)}</code>
-          <p>${t('contribute.nextSteps')}</p>
-          <div class="actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
-            <button id="copy-json-btn" class="nav-button">${t('contribute.copy')}</button>
-            <a href="https://github.com/atakhadiviom/IranRevolution2026/issues/new?title=New+Memorial+Submission&body=${encodeURIComponent('Please add this person to the memorial:\n\n```json\n' + JSON.stringify(data, null, 2) + '\n```')}" 
-               target="_blank" class="nav-button" style="display:inline-block;">
-               Open GitHub Issue
-            </a>
-          </div>
-        </div>
-      `
+      const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement
+      submitBtn.disabled = true
+      submitBtn.textContent = 'Submitting...'
 
-      const copyBtn = document.getElementById('copy-json-btn')
-      if (copyBtn) {
-        copyBtn.addEventListener('click', async () => {
-          try {
-            await navigator.clipboard.writeText(JSON.stringify(data, null, 2))
-            const originalText = copyBtn.textContent
-            copyBtn.textContent = 'Copied!'
-            copyBtn.classList.add('success')
-            setTimeout(() => {
-              copyBtn.textContent = originalText
-              copyBtn.classList.remove('success')
-            }, 2000)
-          } catch (err) {
-            console.error('Failed to copy:', err)
-          }
+      const result = await submitMemorial(data)
+
+      if (result.success) {
+        body!.innerHTML = `
+          <div class="submission-result">
+            <h3>${t('contribute.successTitle')}</h3>
+            <p>${t('contribute.successDesc')}</p>
+            <div class="success-icon">✅</div>
+            <p>Your contribution has been submitted for review. It will appear on the map once verified.</p>
+            <button id="close-modal-success" class="nav-button">${t('details.close')}</button>
+          </div>
+        `
+        document.getElementById('close-modal-success')?.addEventListener('click', () => {
+          overlay?.classList.add('hidden')
         })
+      } else {
+        body!.innerHTML = `
+          <div class="submission-result">
+            <h3>${t('contribute.successTitle')} (Offline Mode)</h3>
+            <p>We couldn't connect to the database directly, but you can still submit via GitHub:</p>
+            <code id="json-output">${JSON.stringify(data, null, 2)}</code>
+            <div class="actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+              <button id="copy-json-btn" class="nav-button">${t('contribute.copy')}</button>
+              <a href="https://github.com/atakhadiviom/IranRevolution2026/issues/new?title=New+Memorial+Submission&body=${encodeURIComponent('Please add this person to the memorial:\n\n```json\n' + JSON.stringify(data, null, 2) + '\n```')}" 
+                 target="_blank" class="nav-button" style="display:inline-block;">
+                 Open GitHub Issue
+              </a>
+            </div>
+          </div>
+        `
+        
+        const copyBtn = document.getElementById('copy-json-btn')
+        if (copyBtn) {
+          copyBtn.addEventListener('click', async () => {
+            try {
+              await navigator.clipboard.writeText(JSON.stringify(data, null, 2))
+              const originalText = copyBtn.textContent
+              copyBtn.textContent = 'Copied!'
+              copyBtn.classList.add('success')
+              setTimeout(() => {
+                copyBtn.textContent = originalText
+                copyBtn.classList.remove('success')
+              }, 2000)
+            } catch (err) {
+              console.error('Failed to copy:', err)
+            }
+          })
+        }
       }
     })
   }

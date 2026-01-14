@@ -1,10 +1,10 @@
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
-const MODEL = 'xiaomi/mimo-v2-flash:free';
+const OPENROUTER_MODEL = import.meta.env.VITE_OPENROUTER_MODEL || 'google/gemini-2.0-flash-exp:free';
 
 export async function extractMemorialData(url: string) {
   try {
-    if (!OPENROUTER_API_KEY) {
-      throw new Error('API Key missing. Please check your .env file and restart the server.');
+    if (!OPENROUTER_API_KEY || OPENROUTER_API_KEY === 'sk-or-v1-...') {
+      throw new Error('Invalid OpenRouter API Key. Please update your .env file with a real key from openrouter.ai.');
     }
 
     // Step 1: Fetch URL content as Markdown using Jina Reader API
@@ -37,7 +37,7 @@ export async function extractMemorialData(url: string) {
         'X-Title': 'Iran Revolution Memorial'
       },
       body: JSON.stringify({
-        model: MODEL,
+        model: OPENROUTER_MODEL,
         messages: [
           {
             role: 'system',
@@ -65,7 +65,13 @@ export async function extractMemorialData(url: string) {
 
     if (!aiResponse.ok) {
       const aiErr = await aiResponse.json().catch(() => ({ error: { message: aiResponse.statusText } }));
-      throw new Error(`AI Service Error: ${aiErr.error?.message || aiResponse.statusText}`);
+      const msg = aiErr.error?.message || aiResponse.statusText;
+      
+      if (msg.includes('cookie') || aiResponse.status === 401) {
+        throw new Error(`AI Auth Error: The selected model is currently unavailable or your API key is invalid. Please try again or check your OpenRouter dashboard.`);
+      }
+      
+      throw new Error(`AI Service Error: ${msg}`);
     }
 
     const data = await aiResponse.json();

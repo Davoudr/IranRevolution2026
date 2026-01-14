@@ -21,6 +21,7 @@ export type MemorialEntry = {
     label: string
     url: string
   }[]
+  verified?: boolean
 }
 
 export interface TwitterWidgets {

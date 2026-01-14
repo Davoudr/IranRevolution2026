@@ -1,106 +1,388 @@
-function generateId(name: string, date: string) {
-  const base = `${name}-${date}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-  return base
-}
+import { supabase } from './modules/supabase'
+import { fetchMemorials, verifyMemorial, deleteMemorial, submitMemorial } from './modules/dataService'
+import { extractMemorialData } from './modules/ai'
+import type { MemorialEntry } from './modules/types'
 
-function normalizeUrl(url?: string) {
-  if (!url) return undefined
-  try {
-    const u = new URL(url)
-    return u.toString()
-  } catch {
-    return undefined
+// DOM Elements
+const loginSection = document.getElementById('login-section') as HTMLDivElement
+const adminSection = document.getElementById('admin-section') as HTMLDivElement
+const loginForm = document.getElementById('login-form') as HTMLFormElement
+const loginError = document.getElementById('login-error') as HTMLParagraphElement
+const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement
+const userEmailSpan = document.getElementById('user-email') as HTMLSpanElement
+const submissionsList = document.getElementById('submissions-list') as HTMLDivElement
+const verifiedList = document.getElementById('verified-list') as HTMLDivElement
+const countUnverified = document.getElementById('count-unverified') as HTMLSpanElement
+const countVerified = document.getElementById('count-verified') as HTMLSpanElement
+const tabUnverified = document.getElementById('tab-unverified') as HTMLDivElement
+const tabVerified = document.getElementById('tab-verified') as HTMLDivElement
+const unverifiedSection = document.getElementById('unverified-section') as HTMLDivElement
+const verifiedSection = document.getElementById('verified-section') as HTMLDivElement
+const entryForm = document.getElementById('entry-form') as HTMLFormElement
+const editIdInput = document.getElementById('edit-id') as HTMLInputElement
+const clearBtn = document.getElementById('clear-btn') as HTMLButtonElement
+const output = document.getElementById('output') as HTMLPreElement
+
+// Quick Import Elements
+const aiUrlInput = document.getElementById('ai-url') as HTMLInputElement
+const aiExtractBtn = document.getElementById('ai-extract-btn') as HTMLButtonElement
+const aiStatus = document.getElementById('ai-status') as HTMLParagraphElement
+const jsonImportArea = document.getElementById('json-import') as HTMLTextAreaElement
+const jsonImportBtn = document.getElementById('json-import-btn') as HTMLButtonElement
+
+let currentSubmissions: MemorialEntry[] = []
+
+// --- Auth Logic ---
+
+async function checkUser() {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    showAdmin(user.email || '')
+  } else {
+    showLogin()
   }
 }
 
-document.getElementById('entry-form')!.addEventListener('submit', (ev) => {
-  ev.preventDefault()
-  const name = (document.getElementById('name') as HTMLInputElement).value.trim()
-  const name_fa = (document.getElementById('name_fa') as HTMLInputElement).value.trim()
-  const city = (document.getElementById('city') as HTMLInputElement).value.trim()
-  const city_fa = (document.getElementById('city_fa') as HTMLInputElement).value.trim()
-  const location = (document.getElementById('location') as HTMLInputElement).value.trim()
-  const location_fa = (document.getElementById('location_fa') as HTMLInputElement).value.trim()
-  const date = (document.getElementById('date') as HTMLInputElement).value
-  const lat = Number((document.getElementById('lat') as HTMLInputElement).value)
-  const lon = Number((document.getElementById('lon') as HTMLInputElement).value)
-  const bio = (document.getElementById('bio') as HTMLTextAreaElement).value.trim()
-  const bio_fa = (document.getElementById('bio_fa') as HTMLTextAreaElement).value.trim()
-  const testimonialsRaw = (document.getElementById('testimonials') as HTMLTextAreaElement).value.trim()
-  const testimonialsFaRaw = (document.getElementById('testimonials_fa') as HTMLTextAreaElement).value.trim()
-  const photo = normalizeUrl((document.getElementById('photo') as HTMLInputElement).value)
-  const video = normalizeUrl((document.getElementById('video') as HTMLInputElement).value)
-  const xPost = normalizeUrl((document.getElementById('xPost') as HTMLInputElement).value)
-  const referencesRaw = (document.getElementById('references') as HTMLTextAreaElement).value.trim()
+function showLogin() {
+  loginSection.classList.remove('hidden')
+  adminSection.classList.add('hidden')
+}
 
-  if (!name || !city || !location || !date || isNaN(lat) || isNaN(lon)) {
-    alert('Please fill all required fields.')
-    return
+function showAdmin(email: string) {
+  loginSection.classList.add('hidden')
+  adminSection.classList.remove('hidden')
+  userEmailSpan.textContent = email
+  loadSubmissions()
+}
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault()
+  const email = (document.getElementById('email') as HTMLInputElement).value
+  const password = (document.getElementById('password') as HTMLInputElement).value
+  
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) {
+    loginError.textContent = error.message
+    loginError.classList.remove('hidden')
+  } else {
+    checkUser()
   }
-
-  const references = referencesRaw ? referencesRaw.split('\n').map(line => {
-    const [label, url] = line.split('|').map(s => s.trim())
-    if (label && url) return { label, url }
-    return null
-  }).filter(Boolean) : undefined
-
-  const entry = {
-    id: generateId(name, date),
-    name,
-    name_fa: name_fa || undefined,
-    city,
-    city_fa: city_fa || undefined,
-    location,
-    location_fa: location_fa || undefined,
-    date,
-    coords: { lat, lon },
-    bio: bio || undefined,
-    bio_fa: bio_fa || undefined,
-    testimonials: testimonialsRaw ? testimonialsRaw.split('\n').map((s) => s.trim()).filter(Boolean) : undefined,
-    testimonials_fa: testimonialsFaRaw ? testimonialsFaRaw.split('\n').map((s) => s.trim()).filter(Boolean) : undefined,
-    media: photo || video || xPost ? { photo, video, xPost } : undefined,
-    references: references && references.length > 0 ? references : undefined
-  }
-  const out = document.getElementById('output')!
-  out.textContent = JSON.stringify(entry, null, 2)
 })
 
-document.getElementById('copy-btn')!.addEventListener('click', async () => {
-  const out = document.getElementById('output')!.textContent
-  if (!out) {
-    alert('Generate JSON first.')
+logoutBtn.addEventListener('click', async () => {
+  await supabase.auth.signOut()
+  showLogin()
+})
+
+// --- Tab Logic ---
+
+tabUnverified.addEventListener('click', () => {
+  tabUnverified.classList.add('active')
+  tabVerified.classList.remove('active')
+  unverifiedSection.classList.remove('hidden')
+  verifiedSection.classList.add('hidden')
+})
+
+tabVerified.addEventListener('click', () => {
+  tabVerified.classList.add('active')
+  tabUnverified.classList.remove('active')
+  verifiedSection.classList.remove('hidden')
+  unverifiedSection.classList.add('hidden')
+})
+
+// --- Dashboard Logic ---
+
+async function loadSubmissions() {
+  submissionsList.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 2rem;">Loading submissions...</p>'
+  verifiedList.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 2rem;">Loading verified memorials...</p>'
+  
+  const allMemorials = await fetchMemorials(true)
+  
+  const unverified = allMemorials.filter(s => !s.verified)
+  const verified = allMemorials.filter(s => s.verified)
+
+  countUnverified.textContent = String(unverified.length)
+  countVerified.textContent = String(verified.length)
+  
+  renderList(unverified, submissionsList)
+  renderList(verified, verifiedList)
+  
+  currentSubmissions = allMemorials
+}
+
+function renderList(submissions: MemorialEntry[], container: HTMLDivElement) {
+  if (submissions.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 2rem;">No entries found.</p>'
     return
   }
+
+  container.innerHTML = submissions.map(s => `
+    <div class="submission-item">
+      <div class="submission-info">
+        <h4>${s.name} ${s.name_fa ? `(${s.name_fa})` : ''}</h4>
+        <p>${s.city} - ${s.date}</p>
+        <span class="status-badge ${s.verified ? 'status-verified' : 'status-pending'}">
+          ${s.verified ? 'Verified' : 'Pending'}
+        </span>
+      </div>
+      <div class="actions">
+        <button class="edit-btn" data-id="${s.id}">Edit</button>
+        ${!s.verified ? `<button class="primary verify-btn" data-id="${s.id}">Verify</button>` : ''}
+        <button class="danger delete-btn" data-id="${s.id}">Delete</button>
+      </div>
+    </div>
+  `).join('')
+
+  // Add event listeners
+  container.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => editEntry((btn as HTMLButtonElement).dataset.id!))
+  })
+  container.querySelectorAll('.verify-btn').forEach(btn => {
+    btn.addEventListener('click', () => handleVerify((btn as HTMLButtonElement).dataset.id!))
+  })
+  container.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => handleDelete((btn as HTMLButtonElement).dataset.id!))
+  })
+}
+
+function renderSubmissions() {
+  // This function is no longer needed as we use renderList, but kept for compatibility if called elsewhere
+  loadSubmissions()
+}
+
+function editEntry(id: string) {
+  const entry = currentSubmissions.find(s => s.id === id)
+  if (!entry) return
+
+  editIdInput.value = entry.id || ''
+  ;(document.getElementById('name') as HTMLInputElement).value = entry.name
+  ;(document.getElementById('name_fa') as HTMLInputElement).value = entry.name_fa || ''
+  ;(document.getElementById('city') as HTMLInputElement).value = entry.city
+  ;(document.getElementById('city_fa') as HTMLInputElement).value = entry.city_fa || ''
+  ;(document.getElementById('location') as HTMLInputElement).value = entry.location || ''
+  ;(document.getElementById('location_fa') as HTMLInputElement).value = entry.location_fa || ''
+  ;(document.getElementById('date') as HTMLInputElement).value = entry.date
+  ;(document.getElementById('lat') as HTMLInputElement).value = String(entry.coords?.lat || 35.6892)
+  ;(document.getElementById('lon') as HTMLInputElement).value = String(entry.coords?.lon || 51.3890)
+  ;(document.getElementById('bio') as HTMLTextAreaElement).value = entry.bio || ''
+  ;(document.getElementById('bio_fa') as HTMLTextAreaElement).value = entry.bio_fa || ''
+  ;(document.getElementById('testimonials') as HTMLTextAreaElement).value = entry.testimonials?.join('\n') || ''
+  ;(document.getElementById('photo') as HTMLInputElement).value = entry.media?.photo || ''
+  ;(document.getElementById('xPost') as HTMLInputElement).value = entry.media?.xPost || ''
+  ;(document.getElementById('references') as HTMLTextAreaElement).value = 
+    entry.references?.map(r => `${r.label} | ${r.url}`).join('\n') || ''
+  ;(document.getElementById('verified') as HTMLInputElement).checked = entry.verified || false
+  
+  output.textContent = JSON.stringify(entry, null, 2)
+  entryForm.scrollIntoView({ behavior: 'smooth' })
+}
+
+// --- Quick Import Logic ---
+
+aiExtractBtn.addEventListener('click', async () => {
+  const url = aiUrlInput.value.trim()
+  if (!url) return
+
+  aiExtractBtn.disabled = true
+  aiExtractBtn.textContent = 'Extracting...'
+  aiStatus.textContent = 'Fetching source content...'
+  aiStatus.className = ''
+  aiStatus.classList.remove('hidden')
+
   try {
-    await navigator.clipboard.writeText(out)
-    const btn = document.getElementById('copy-btn') as HTMLButtonElement
-    const originalText = btn.textContent
-    btn.textContent = 'Copied!'
-    btn.style.backgroundColor = '#4CAF50'
-    btn.style.color = 'white'
-    setTimeout(() => {
-      btn.textContent = originalText
-      btn.style.backgroundColor = ''
-      btn.style.color = ''
-    }, 2000)
-  } catch (err) {
-    console.error('Failed to copy: ', err)
-    alert('Failed to copy to clipboard.')
+    const data = await extractMemorialData(url)
+    populateForm(data)
+    
+    // Also set references automatically
+    const refsArea = document.getElementById('references') as HTMLTextAreaElement
+    const existingRefs = refsArea.value.trim()
+    const newRef = `${data.referenceLabel || 'Source'} | ${url}`
+    refsArea.value = existingRefs ? `${existingRefs}\n${newRef}` : newRef
+    
+    // Set X Post if it looks like one
+    if (url.includes('x.com') || url.includes('twitter.com')) {
+      ;(document.getElementById('xPost') as HTMLInputElement).value = url
+    }
+
+    aiStatus.textContent = '✨ Extraction successful!'
+    aiStatus.style.color = 'var(--success)'
+  } catch (error) {
+    aiStatus.textContent = error instanceof Error ? error.message : 'Extraction failed'
+    aiStatus.style.color = 'var(--danger)'
+  } finally {
+    aiExtractBtn.disabled = false
+    aiExtractBtn.textContent = 'Extract'
   }
 })
 
-document.getElementById('download')!.addEventListener('click', () => {
-  const out = document.getElementById('output')!.textContent
-  if (!out) {
-    alert('Generate JSON first.')
-    return
+jsonImportBtn.addEventListener('click', async () => {
+  const raw = jsonImportArea.value.trim()
+  if (!raw) return
+
+  try {
+    const data = JSON.parse(raw) as Partial<MemorialEntry>
+    
+    if (!data.name) {
+      alert('Error: JSON must at least contain a name.')
+      return
+    }
+
+    // Force verified to true for admin imports
+    data.verified = true
+    
+    // Attempt to save immediately
+    jsonImportBtn.disabled = true
+    jsonImportBtn.textContent = 'Saving...'
+    
+    const { success, error } = await submitMemorial(data)
+    
+    if (success) {
+      jsonImportArea.value = ''
+      alert('JSON imported and saved successfully as a verified memorial!')
+      loadSubmissions()
+    } else {
+      alert(`Error: ${error}`)
+    }
+  } catch (e) {
+    alert('Invalid JSON format. Please check your input.')
+  } finally {
+    jsonImportBtn.disabled = false
+    jsonImportBtn.textContent = 'Import & Save Memorial'
   }
-  const blob = new Blob([out], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'memorial-entry.json'
-  a.click()
-  URL.revokeObjectURL(url)
 })
 
+function populateForm(data: any) {
+  if (data.name) {
+    ;(document.getElementById('name') as HTMLInputElement).value = data.name
+  }
+  if (data.name_fa) {
+    ;(document.getElementById('name_fa') as HTMLInputElement).value = data.name_fa
+  }
+  if (data.city) {
+    ;(document.getElementById('city') as HTMLInputElement).value = data.city
+  }
+  if (data.city_fa) {
+    ;(document.getElementById('city_fa') as HTMLInputElement).value = data.city_fa
+  }
+  if (data.location) {
+    ;(document.getElementById('location') as HTMLInputElement).value = data.location
+  }
+  if (data.location_fa) {
+    ;(document.getElementById('location_fa') as HTMLInputElement).value = data.location_fa
+  }
+  if (data.date) {
+    ;(document.getElementById('date') as HTMLInputElement).value = data.date
+  }
+  
+  if (data.coords) {
+    ;(document.getElementById('lat') as HTMLInputElement).value = String(data.coords.lat || 35.6892)
+    ;(document.getElementById('lon') as HTMLInputElement).value = String(data.coords.lon || 51.3890)
+  }
+  
+  if (data.bio) {
+    ;(document.getElementById('bio') as HTMLTextAreaElement).value = data.bio
+  }
+  if (data.bio_fa) {
+    ;(document.getElementById('bio_fa') as HTMLTextAreaElement).value = data.bio_fa
+  }
+  
+  if (Array.isArray(data.testimonials)) {
+    ;(document.getElementById('testimonials') as HTMLTextAreaElement).value = data.testimonials.join('\n')
+  }
+  
+  if (data.media) {
+    if (data.media.photo) {
+      ;(document.getElementById('photo') as HTMLInputElement).value = data.media.photo
+    }
+    if (data.media.xPost) {
+      ;(document.getElementById('xPost') as HTMLInputElement).value = data.media.xPost
+    }
+  }
+  
+  if (Array.isArray(data.references)) {
+    ;(document.getElementById('references') as HTMLTextAreaElement).value = 
+      data.references.map((r: any) => `${r.label} | ${r.url}`).join('\n')
+  }
+}
+
+async function handleVerify(id: string) {
+  if (!confirm('Are you sure you want to verify this entry? It will appear on the live map.')) return
+  const { success, error } = await verifyMemorial(id)
+  if (success) {
+    alert('Entry verified successfully!')
+    loadSubmissions()
+  } else {
+    alert(`Error: ${error}`)
+  }
+}
+
+async function handleDelete(id: string) {
+  if (!confirm('Are you sure you want to delete this entry? This action cannot be undone.')) return
+  const { success, error } = await deleteMemorial(id)
+  if (success) {
+    alert('Entry deleted successfully!')
+    loadSubmissions()
+  } else {
+    alert(`Error: ${error}`)
+  }
+}
+
+entryForm.addEventListener('submit', async (e) => {
+  e.preventDefault()
+  
+  const references = (document.getElementById('references') as HTMLTextAreaElement).value.trim()
+    .split('\n')
+    .map(line => {
+      const [label, url] = line.split('|').map(s => s.trim())
+      if (label && url) return { label, url }
+      return null
+    })
+    .filter(Boolean) as { label: string, url: string }[]
+
+  const entry: Partial<MemorialEntry> = {
+    id: editIdInput.value || undefined,
+    name: (document.getElementById('name') as HTMLInputElement).value.trim(),
+    name_fa: (document.getElementById('name_fa') as HTMLInputElement).value.trim() || undefined,
+    city: (document.getElementById('city') as HTMLInputElement).value.trim(),
+    city_fa: (document.getElementById('city_fa') as HTMLInputElement).value.trim() || undefined,
+    location: (document.getElementById('location') as HTMLInputElement).value.trim() || undefined,
+    location_fa: (document.getElementById('location_fa') as HTMLInputElement).value.trim() || undefined,
+    date: (document.getElementById('date') as HTMLInputElement).value,
+    coords: {
+      lat: Number((document.getElementById('lat') as HTMLInputElement).value),
+      lon: Number((document.getElementById('lon') as HTMLInputElement).value)
+    },
+    bio: (document.getElementById('bio') as HTMLTextAreaElement).value.trim() || undefined,
+    bio_fa: (document.getElementById('bio_fa') as HTMLTextAreaElement).value.trim() || undefined,
+    testimonials: (document.getElementById('testimonials') as HTMLTextAreaElement).value.trim()
+      .split('\n').map(s => s.trim()).filter(Boolean),
+    media: {
+      photo: (document.getElementById('photo') as HTMLInputElement).value.trim() || undefined,
+      xPost: (document.getElementById('xPost') as HTMLInputElement).value.trim() || undefined
+    },
+    references: references.length > 0 ? references : undefined,
+    verified: (document.getElementById('verified') as HTMLInputElement).checked
+  }
+
+  output.textContent = JSON.stringify(entry, null, 2)
+  
+  const { success, error } = await submitMemorial(entry)
+  if (success) {
+    alert('Memorial saved successfully!')
+    clearForm()
+    loadSubmissions()
+  } else {
+    alert(`Error saving: ${error}`)
+  }
+})
+
+function clearForm() {
+  entryForm.reset()
+  editIdInput.value = ''
+  output.textContent = ''
+}
+
+clearBtn.addEventListener('click', clearForm)
+
+// Initialize
+checkUser()
