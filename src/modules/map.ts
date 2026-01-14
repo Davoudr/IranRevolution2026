@@ -31,7 +31,6 @@ export function initMap() {
     maxZoom: 20
   }).addTo(map)
   
-  // @ts-expect-error - leaflet.markercluster extends L but types might not be perfectly matched
   markersLayer = L.markerClusterGroup({
     showCoverageOnHover: false,
     maxClusterRadius: 40,
