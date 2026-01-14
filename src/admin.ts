@@ -1,5 +1,5 @@
 import { supabase } from './modules/supabase'
-import { fetchMemorials, verifyMemorial, deleteMemorial, submitMemorial } from './modules/dataService'
+import { fetchMemorials, verifyMemorial, deleteMemorial, submitMemorial, batchUpdateImages } from './modules/dataService'
 import { extractMemorialData } from './modules/ai'
 import { extractXPostImage } from './modules/imageExtractor'
 import type { MemorialEntry } from './modules/types'
@@ -28,6 +28,7 @@ const output = document.getElementById('output') as HTMLPreElement
 const aiUrlInput = document.getElementById('ai-url') as HTMLInputElement
 const aiExtractBtn = document.getElementById('ai-extract-btn') as HTMLButtonElement
 const extractImgBtn = document.getElementById('extract-img-btn') as HTMLButtonElement
+const batchImgBtn = document.getElementById('batch-img-btn') as HTMLButtonElement
 const aiStatus = document.getElementById('ai-status') as HTMLParagraphElement
 const jsonImportArea = document.getElementById('json-import') as HTMLTextAreaElement
 const jsonImportBtn = document.getElementById('json-import-btn') as HTMLButtonElement
@@ -248,6 +249,28 @@ extractImgBtn.addEventListener('click', async () => {
   } finally {
     extractImgBtn.disabled = false
     extractImgBtn.textContent = 'Extract Image'
+  }
+})
+
+batchImgBtn.addEventListener('click', async () => {
+  if (!confirm('This will search all existing memorials for X posts and try to extract images for those that don\'t have one. This might take a while. Continue?')) return
+
+  batchImgBtn.disabled = true
+  batchImgBtn.textContent = 'Batch Extracting...'
+  
+  try {
+    const { success, count, error } = await batchUpdateImages()
+    if (success) {
+      alert(`Successfully updated ${count} memorials with images!`)
+      loadSubmissions()
+    } else {
+      alert(`Batch update failed: ${error}`)
+    }
+  } catch (error) {
+    alert('Batch update failed.')
+  } finally {
+    batchImgBtn.disabled = false
+    batchImgBtn.textContent = 'Batch Extract Images for Old Entries'
   }
 })
 

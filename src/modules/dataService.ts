@@ -148,6 +148,56 @@ export async function submitMemorial(entry: Partial<MemorialEntry>): Promise<{ s
   }
 }
 
+export async function batchUpdateImages(): Promise<{ success: boolean; count: number; error?: string }> {
+  if (!supabase) return { success: false, count: 0, error: 'Supabase not configured' }
+  
+  try {
+    const { data: memorials, error: fetchError } = await supabase
+      .from('memorials')
+      .select('*')
+    
+    if (fetchError) throw fetchError
+    
+    const rows = (memorials || []) as MemorialRow[]
+    const targets = rows.filter(m => {
+      const media = m.media as Record<string, unknown>
+      return media?.xPost && !media?.photo
+    })
+    
+    if (targets.length === 0) return { success: true, count: 0 }
+    
+    let updatedCount = 0
+    for (const m of targets) {
+      const media = m.media as Record<string, string>
+      const xPost = media?.xPost
+      const photo = await extractXPostImage(xPost)
+      
+      if (photo) {
+        const updatedMedia = { ...media, photo }
+        const client = supabase as unknown as { 
+          from: (t: string) => { 
+            update: (d: Record<string, unknown>) => { 
+              eq: (f: string, v: string) => Promise<{ error: unknown }> 
+            } 
+          } 
+        }
+        const { error: updateError } = await client
+          .from('memorials')
+          .update({ media: updatedMedia })
+          .eq('id', m.id)
+          
+        if (!updateError) updatedCount++
+      }
+      
+      await new Promise(r => setTimeout(r, 500))
+    }
+    
+    return { success: true, count: updatedCount }
+  } catch (e) {
+    return { success: false, count: 0, error: e instanceof Error ? e.message : 'Unknown error' }
+  }
+}
+
 async function fetchStaticMemorials(): Promise<MemorialEntry[]> {
   const response = await fetch(`${import.meta.env.BASE_URL}data/memorials.json`)
   return response.json()

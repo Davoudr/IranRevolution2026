@@ -1,10 +1,13 @@
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import 'leaflet.markercluster'
+import 'leaflet.markercluster/dist/MarkerCluster.css'
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import type { MemorialEntry } from './types'
 import { currentLanguage } from './i18n'
 
 let map: L.Map
-let markersLayer: L.LayerGroup
+let markersLayer: any // MarkerClusterGroup
 let selectedCb: (entry: MemorialEntry) => void = () => {}
 
 export function initMap() {
@@ -27,8 +30,22 @@ export function initMap() {
     subdomains: 'abcd',
     maxZoom: 20
   }).addTo(map)
-
-  markersLayer = L.layerGroup().addTo(map)
+  
+  // @ts-ignore
+  markersLayer = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    maxClusterRadius: 40,
+    spiderfyOnMaxZoom: true,
+    disableClusteringAtZoom: 14,
+    iconCreateFunction: (cluster: any) => {
+      const count = cluster.getChildCount();
+      return L.divIcon({
+        html: `<div class="custom-cluster"><span>${count}</span></div>`,
+        className: 'marker-cluster-custom',
+        iconSize: L.point(40, 40)
+      });
+    }
+  }).addTo(map)
 }
 
 export function plotMarkers(entries: MemorialEntry[]) {
@@ -37,29 +54,19 @@ export function plotMarkers(entries: MemorialEntry[]) {
   }
   markersLayer.clearLayers()
 
-  const seenCoords = new Set<string>()
-
   entries.forEach((entry) => {
     if (!entry.coords) return
-    let { lat, lon } = entry.coords
+    const { lat, lon } = entry.coords
 
-    // Add a tiny jitter if coordinates are identical to avoid stacking
-    const coordKey = `${lat.toFixed(4)},${lon.toFixed(4)}`
-    if (seenCoords.has(coordKey)) {
-      lat += (Math.random() - 0.5) * 0.01
-      lon += (Math.random() - 0.5) * 0.01
-    }
-    seenCoords.add(coordKey)
-    
-    // Create a custom red dot marker
-    const marker = L.circleMarker([lat, lon], {
-      radius: 8,
-      fillColor: '#ff0000',
-      color: '#ffffff',
-      weight: 2,
-      opacity: 1,
-      fillOpacity: 0.8
+    // Create a marker with a divIcon that looks like the red dot
+    const icon = L.divIcon({
+      className: 'custom-marker-icon',
+      html: '<div class="red-dot"></div>',
+      iconSize: [16, 16],
+      iconAnchor: [8, 8]
     })
+
+    const marker = L.marker([lat, lon], { icon })
 
     // Use bilingual fields for tooltip
     const isFa = currentLanguage() === 'fa'
