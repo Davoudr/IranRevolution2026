@@ -134,7 +134,9 @@ function renderDetails(entry: MemorialEntry) {
   aside.focus()
 
   // Trigger Twitter widget rendering if present
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (entry.media?.xPost && (window as any).twttr) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).twttr.widgets.load(panel)
   }
 
@@ -298,8 +300,9 @@ function initContributionForm() {
 
         aiStatus.textContent = t('ai.success')
         aiStatus.className = 'ai-status success'
-      } catch (error: any) {
-        aiStatus.textContent = error.message || t('ai.error')
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : t('ai.error')
+        aiStatus.textContent = errorMessage
         aiStatus.className = 'ai-status error'
       } finally {
         aiBtn.disabled = false
