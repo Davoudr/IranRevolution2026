@@ -467,7 +467,7 @@ main {
 }
 
 .ai-button {
-  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  background: var(--accent);
   color: white;
   border: none;
   padding: 0.5rem 1rem;

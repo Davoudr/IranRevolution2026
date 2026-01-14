@@ -149,6 +149,32 @@
   ]
 },
 {
+  "name": "Sina Ashkabousi",
+  "city": "Tehran",
+  "date": "2026-01-14",
+  "location": "Tehranpars Park",
+  "bio": "15-year-old killed by regime forces after chanting slogans for freedom in Tehranpars Park.",
+  "references": [
+    {
+      "label": "X Post",
+      "url": "https://x.com/SinaMihandoost/status/2011392935435309233?s=20"
+    }
+  ]
+},
+{
+  "name": "Amir Ali Heydari",
+  "city": "Kermanshah",
+  "date": "2026-01-12",
+  "location": "",
+  "bio": "17-year-old teenager shot and killed in Kermanshah.",
+  "references": [
+    {
+      "label": "X Post",
+      "url": "https://x.com/Sssccpp/status/2010769248944103625?s=20"
+    }
+  ]
+},
+{
   "name": "علی عنبرستانی",
   "city": "سبزوار",
   "date": "",
