@@ -19,7 +19,8 @@ async function boot() {
   currentMemorials = memorials
 
   initUiText()
-  initLanguageSwitcher(memorials)
+  updateTotalCounter(memorials.length)
+  initLanguageSwitcher()
   initMap()
   plotMarkers(memorials)
   initContributionForm()
@@ -49,6 +50,7 @@ function setupRealtime() {
        // Re-fetch all memorials to ensure consistent state (including order and verification)
       const updatedMemorials = await fetchMemorials()
       currentMemorials = updatedMemorials
+      updateTotalCounter(currentMemorials.length)
       
       // Update the map and search
       plotMarkers(currentMemorials)
@@ -103,20 +105,34 @@ function initUiText() {
   const searchInput = document.getElementById('search-input') as HTMLInputElement
   const footerNote = document.getElementById('footer-note')
   const privacyLink = document.getElementById('privacy-link') as HTMLAnchorElement
+  const badge = document.getElementById('total-count-badge')
 
   if (title) title.textContent = t('site.title')
   if (searchInput) searchInput.placeholder = t('search.placeholder')
   if (footerNote) footerNote.textContent = t('site.footerNote')
   if (privacyLink) privacyLink.textContent = t('site.privacy')
+  if (badge) {
+    badge.title = t('stats.livesHonored')
+    badge.setAttribute('aria-label', `${t('stats.livesHonored')}: ${badge.textContent}`)
+  }
 }
 
-function initLanguageSwitcher(memorials: MemorialEntry[]) {
+function updateTotalCounter(count: number) {
+  const badge = document.getElementById('total-count-badge')
+  if (badge) {
+    badge.textContent = count.toString()
+    badge.title = t('stats.livesHonored')
+    badge.setAttribute('aria-label', `${t('stats.livesHonored')}: ${count}`)
+  }
+}
+
+function initLanguageSwitcher() {
   const select = document.getElementById('language-select') as HTMLSelectElement
   select.addEventListener('change', async () => {
     await setLanguage(select.value as 'en' | 'fa')
     initUiText()
-    plotMarkers(memorials)
-    clearDetails(memorials)
+    plotMarkers(currentMemorials)
+    clearDetails(currentMemorials)
     document.documentElement.dir = select.value === 'fa' ? 'rtl' : 'ltr'
     document.documentElement.lang = select.value
   })
