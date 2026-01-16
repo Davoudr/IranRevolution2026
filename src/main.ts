@@ -607,37 +607,60 @@ function initContributionForm() {
       submitBtn.textContent = 'Submitting...'
 
       const result = await submitMemorial(data)
+      console.log('Submission result:', result)
 
       if (result.success) {
         body!.innerHTML = `
           <div class="submission-result">
-            <h3>${t('contribute.successTitle')}</h3>
             <div class="success-icon" style="font-size: 3rem; margin: 1.5rem 0;">✅</div>
-            <p>Your contribution has been submitted for review. It will appear on the map once verified.</p>
-            <div class="actions" style="margin-top: 1.5rem;">
-              <button id="close-modal-success" class="nav-button primary">${t('details.close')}</button>
+            <h3>${t('contribute.successTitle')}</h3>
+            <p>${t('contribute.pendingReview') || 'Your contribution has been submitted for review. It will appear on the map once verified by an admin.'}</p>
+            <div class="actions" style="margin-top: 2rem;">
+              <button id="close-modal-success" class="submit-button" style="max-width: 200px; margin: 0 auto;">${t('details.close')}</button>
             </div>
           </div>
         `
 
         document.getElementById('close-modal-success')?.addEventListener('click', () => {
           overlay?.classList.add('hidden')
+          document.body.style.overflow = ''
         })
       } else {
+        let errorHint = ''
+        if (result.error?.toLowerCase().includes('policy')) {
+          errorHint = '<br><small style="color:var(--muted)">Hint: This might be a Database Row-Level Security (RLS) issue. Ensure your Supabase table allows public inserts.</small>'
+        }
+        
         body!.innerHTML = `
-          <div class="submission-result">
-            <h3>${t('contribute.successTitle')} (Offline Mode)</h3>
-            <p>We couldn't connect to the database directly, but you can still submit via GitHub:</p>
-            <code id="json-output">${JSON.stringify(data, null, 2)}</code>
-            <div class="actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
-              <button id="copy-json-btn" class="nav-button">${t('contribute.copy')}</button>
-              <a href="https://github.com/atakhadiviom/IranRevolution2026/issues/new?title=New+Memorial+Submission&body=${encodeURIComponent('Please add this person to the memorial:\n\n```json\n' + JSON.stringify(data, null, 2) + '\n```')}" 
-                 target="_blank" class="nav-button" style="display:inline-block;">
-                 Open GitHub Issue
-              </a>
+          <div class="submission-result error">
+            <div class="error-icon" style="font-size: 3rem; margin: 1.5rem 0;">⚠️</div>
+            <h3>${t('contribute.errorTitle') || 'Submission Failed'}</h3>
+            <p>${result.error || 'An unexpected error occurred. Please try again or submit via GitHub.'}${errorHint}</p>
+            
+            <div class="offline-submission" style="margin-top: 1.5rem; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem; background: rgba(0,0,0,0.2);">
+              <p style="font-size: 0.85rem; margin-bottom: 1rem; color: var(--muted);">You can still submit by copying the data below and opening a GitHub issue:</p>
+              <div class="json-preview-container" style="max-height: 200px; overflow-y: auto; text-align: left; background: #111; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+                <code style="font-size: 0.8rem; white-space: pre-wrap;">${JSON.stringify(data, null, 2)}</code>
+              </div>
+              <div class="actions" style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                <button id="copy-json-btn" class="nav-button btn-sm">${t('contribute.copy')}</button>
+                <a href="https://github.com/atakhadiviom/IranRevolution2026/issues/new?title=New+Memorial+Submission&body=${encodeURIComponent('Please add this person to the memorial:\n\n```json\n' + JSON.stringify(data, null, 2) + '\n```')}" 
+                   target="_blank" class="nav-button btn-sm" style="display:inline-block;">
+                   Open GitHub Issue
+                </a>
+              </div>
+            </div>
+
+            <div class="actions" style="margin-top: 1.5rem;">
+              <button id="close-modal-error" class="submit-button secondary" style="max-width: 200px; margin: 0 auto;">${t('details.close')}</button>
             </div>
           </div>
         `
+        
+        document.getElementById('close-modal-error')?.addEventListener('click', () => {
+          overlay?.classList.add('hidden')
+          document.body.style.overflow = ''
+        })
         
         const copyBtn = document.getElementById('copy-json-btn')
         if (copyBtn) {

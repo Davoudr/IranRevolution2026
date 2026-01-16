@@ -71,9 +71,7 @@ export async function deleteMemorial(id: string): Promise<{ success: boolean; er
 
 export async function submitMemorial(entry: Partial<MemorialEntry>): Promise<{ success: boolean; error?: string }> {
   if (!supabase) {
-    // For community contributions, we generate JSON output which is handled in the UI
-    // But this function is also used for saving, so we check if it's available
-    return { success: false, error: 'Supabase not configured. Please use the "Generate Submission" button.' }
+    return { success: false, error: 'Database connection not available.' }
   }
   try {
     if (!entry.name) {
@@ -89,14 +87,21 @@ export async function submitMemorial(entry: Partial<MemorialEntry>): Promise<{ s
     
     // Check for duplicates if this is a new entry
     if (!isEditing) {
-      const { data: existing } = await supabase
-        .schema('public')
-        .from('memorials')
-        .select('id, name, media, source_links')
-        .or(`name.eq."${entry.name}", media->>xPost.eq."${entry.media?.xPost}"`)
+      const orConditions = [];
+      if (entry.name) orConditions.push(`name.eq."${entry.name}"`);
+      if (entry.media?.xPost) orConditions.push(`media->>xPost.eq."${entry.media.xPost}"`);
 
-      if (existing && existing.length > 0) {
-        return { success: false, error: `A memorial with this name or URL already exists.` }
+      if (orConditions.length > 0) {
+        const { data: existing, error: checkError } = await supabase
+          .from('memorials')
+          .select('id, name')
+          .or(orConditions.join(','))
+
+        if (checkError) {
+          console.error('Duplicate check error:', checkError);
+        } else if (existing && existing.length > 0) {
+          return { success: false, error: `A memorial with this name or URL already exists.` }
+        }
       }
     }
 
@@ -130,12 +135,12 @@ export async function submitMemorial(entry: Partial<MemorialEntry>): Promise<{ s
       media: (entry.media || {}) as Database['public']['Tables']['memorials']['Insert']['media'],
       source_links: (entry.references || []) as Database['public']['Tables']['memorials']['Insert']['source_links'],
       testimonials: (entry.testimonials || []) as Database['public']['Tables']['memorials']['Insert']['testimonials'],
-      // If editing, preserve verified status if not explicitly provided
+      // If editing, preserve verified status if not explicitly provided. 
+      // NEW: For public submissions, it will be false by default.
       verified: entry.verified ?? false
     }
 
     const { error } = await supabase
-      .schema('public')
       .from('memorials')
       .upsert(dataToSave as MemorialInsert)
 

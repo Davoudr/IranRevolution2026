@@ -5082,5 +5082,35 @@
     ],
     "verified": true,
     "submitted_by": null
+  },
+  {
+    "id": "saman-grami",
+    "created_at": "2026-01-16T05:38:15.594041+00:00",
+    "name": "Saman Grami",
+    "name_fa": null,
+    "city": "Marvdasht",
+    "city_fa": null,
+    "location": "Marvdasht",
+    "location_fa": null,
+    "date": "2026-01-15",
+    "coords": {
+      "lat": 35.6892,
+      "lon": 51.389
+    },
+    "bio": "29-year-old victim from Marvdasht, Fars province, killed in January 2026.",
+    "bio_fa": null,
+    "testimonials": [],
+    "media": {
+      "photo": "https://pbs.twimg.com/media/G-vYp0MbMAAn0yT?format=jpg&name=small",
+      "xPost": "https://x.com/LoabatK/status/2011939874291454279?s=20"
+    },
+    "source_links": [
+      {
+        "url": "https://x.com/LoabatK/status/2011939874291454279?s=20",
+        "label": "X Post"
+      }
+    ],
+    "verified": false,
+    "submitted_by": null
   }
 ]
