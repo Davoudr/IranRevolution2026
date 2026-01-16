@@ -5,7 +5,6 @@ import type { MemorialEntry } from './types'
 import type { Database } from './database.types'
 
 type MemorialUpdate = Database['public']['Tables']['memorials']['Update']
-type MemorialInsert = Database['public']['Tables']['memorials']['Insert']
 
 type MemorialRow = Database['public']['Tables']['memorials']['Row']
 
@@ -140,9 +139,11 @@ export async function submitMemorial(entry: Partial<MemorialEntry>): Promise<{ s
       verified: entry.verified ?? false
     }
 
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     const { error } = await supabase
       .from('memorials')
-      .upsert(dataToSave as MemorialInsert)
+      .upsert(dataToSave as any)
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     if (error) {
       return { success: false, error: error.message }

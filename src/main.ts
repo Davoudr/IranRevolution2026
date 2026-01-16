@@ -607,7 +607,6 @@ function initContributionForm() {
       submitBtn.textContent = 'Submitting...'
 
       const result = await submitMemorial(data)
-      console.log('Submission result:', result)
 
       if (result.success) {
         body!.innerHTML = `
