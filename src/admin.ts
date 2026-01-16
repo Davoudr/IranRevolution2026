@@ -400,25 +400,51 @@ function editEntry(id: string) {
   ;(document.getElementById('verified') as HTMLInputElement).checked = entry.verified || false
   
   output.textContent = JSON.stringify(entry, null, 2)
+  checkDuplicate(entry.name, entry.city)
   showSection('editor')
-  checkDuplicate(entry.name)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-function checkDuplicate(name: string) {
+function checkDuplicate(name: string, city?: string) {
   if (!name || name.length < 3) {
     duplicateWarning.classList.add('hidden')
     return
   }
 
-  const normalizedSearch = name.toLowerCase().trim()
+  const normalizedName = name.toLowerCase().trim()
+  const currentCity = city?.toLowerCase().trim() || (document.getElementById('city') as HTMLInputElement)?.value.toLowerCase().trim()
   
-  const match = allMemorials.find(m => 
-    (m.id !== editIdInput.value) && (
-      m.name.toLowerCase().trim() === normalizedSearch ||
-      m.name.toLowerCase().trim().includes(normalizedSearch)
-    )
-  )
+  const nameParts = normalizedName.split(/\s+/).filter(p => p.length > 1)
+  const firstName = nameParts[0]
+  const lastName = nameParts[nameParts.length - 1]
+
+  const match = allMemorials.find(m => {
+    if (m.id === editIdInput.value) return false
+    
+    const mName = m.name.toLowerCase().trim()
+    const mCity = m.city.toLowerCase().trim()
+    const mLocation = (m.location || '').toLowerCase().trim()
+
+    // 1. Exact or include match
+    if (mName === normalizedName || mName.includes(normalizedName) || normalizedName.includes(mName)) return true
+
+    // 2. First + Last name
+    if (nameParts.length >= 2 && firstName !== lastName) {
+      if (mName.includes(firstName) && mName.includes(lastName)) return true
+    }
+
+    // 3. First name + Location
+    if (currentCity && firstName && mName.includes(firstName)) {
+      if (mCity.includes(currentCity) || mLocation.includes(currentCity) || currentCity.includes(mCity)) return true
+    }
+
+    // 4. Last name + Location
+    if (currentCity && lastName && mName.includes(lastName)) {
+      if (mCity.includes(currentCity) || mLocation.includes(currentCity) || currentCity.includes(mCity)) return true
+    }
+
+    return false
+  })
 
   if (match) {
     duplicateWarning.innerHTML = `
@@ -444,6 +470,11 @@ function checkDuplicate(name: string) {
 
 document.getElementById('name')?.addEventListener('input', (e) => {
   checkDuplicate((e.target as HTMLInputElement).value)
+})
+
+document.getElementById('city')?.addEventListener('input', (e) => {
+  const name = (document.getElementById('name') as HTMLInputElement).value
+  checkDuplicate(name, (e.target as HTMLInputElement).value)
 })
 
 searchSubmissions.addEventListener('input', renderSubmissions)
@@ -645,6 +676,10 @@ function populateForm(data: Partial<MemorialEntry> & { referenceLabel?: string; 
   if (Array.isArray(data.references)) {
     (document.getElementById('references') as HTMLTextAreaElement).value = 
       data.references.map((r) => `${r.label} | ${r.url}`).join('\n')
+  }
+
+  if (data.name) {
+    checkDuplicate(data.name, data.city)
   }
 }
 

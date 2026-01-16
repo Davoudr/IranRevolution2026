@@ -498,17 +498,44 @@ function initContributionForm() {
     const nameInput = form.querySelector('[name="name"]') as HTMLInputElement
     const duplicateWarning = document.getElementById('duplicate-warning') as HTMLDivElement
 
-    const checkDuplicate = (name: string) => {
+    const checkDuplicate = (name: string, city?: string) => {
       if (!name || name.length < 3) {
         duplicateWarning.classList.add('hidden')
         return
       }
 
-      const normalizedSearch = name.toLowerCase().trim()
-      const match = currentMemorials.find(m => 
-        m.name.toLowerCase().trim() === normalizedSearch ||
-        m.name.toLowerCase().trim().includes(normalizedSearch)
-      )
+      const normalizedName = name.toLowerCase().trim()
+      const currentCity = city?.toLowerCase().trim() || (form.querySelector('[name="city"]') as HTMLInputElement)?.value.toLowerCase().trim()
+      
+      const nameParts = normalizedName.split(/\s+/).filter(p => p.length > 1)
+      const firstName = nameParts[0]
+      const lastName = nameParts[nameParts.length - 1]
+
+      const match = currentMemorials.find(m => {
+        const mName = m.name.toLowerCase().trim()
+        const mCity = m.city.toLowerCase().trim()
+        const mLocation = (m.location || '').toLowerCase().trim()
+
+        // 1. Exact or include match
+        if (mName === normalizedName || mName.includes(normalizedName) || normalizedName.includes(mName)) return true
+
+        // 2. First + Last name (if both exist and are distinct)
+        if (nameParts.length >= 2 && firstName !== lastName) {
+          if (mName.includes(firstName) && mName.includes(lastName)) return true
+        }
+
+        // 3. First name + Location
+        if (currentCity && firstName && mName.includes(firstName)) {
+          if (mCity.includes(currentCity) || mLocation.includes(currentCity) || currentCity.includes(mCity)) return true
+        }
+
+        // 4. Last name + Location
+        if (currentCity && lastName && mName.includes(lastName)) {
+          if (mCity.includes(currentCity) || mLocation.includes(currentCity) || currentCity.includes(mCity)) return true
+        }
+
+        return false
+      })
 
       if (match) {
         duplicateWarning.innerHTML = `
@@ -536,6 +563,11 @@ function initContributionForm() {
 
     nameInput?.addEventListener('input', (e) => {
       checkDuplicate((e.target as HTMLInputElement).value)
+    })
+
+    form.querySelector('[name="city"]')?.addEventListener('input', (e) => {
+      const name = (form.querySelector('[name="name"]') as HTMLInputElement).value
+      checkDuplicate(name, (e.target as HTMLInputElement).value)
     })
 
     aiBtn?.addEventListener('click', async () => {
