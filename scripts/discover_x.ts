@@ -35,6 +35,7 @@ function saveHistory(history: Set<string>) {
 }
 
 const TARGETS = [
+  'https://hengaw.net/fa/news/2026/01/article-138-1',
   'https://x.com/IranIntl_En',
   'https://x.com/HyrcaniHRM',
   'https://x.com/allahbakhshii',
@@ -99,6 +100,14 @@ async function runDiscovery() {
   // 3. Collect status URLs from all targets
   const allUrls = new Set<string>();
   for (const target of TARGETS) {
+    // Check if the target ITSELF is a direct article link (not a search/profile page)
+    if (target.includes('/status/') || target.includes('/news/') || target.includes('/article/')) {
+      if (!existingUrls.has(target) && !history.has(target)) {
+        allUrls.add(target);
+      }
+      continue;
+    }
+
     const urls = await getXStatusUrls(target);
     urls.forEach(url => {
       if (!existingUrls.has(url) && !history.has(url)) {
@@ -120,41 +129,49 @@ async function runDiscovery() {
     try {
       console.log(`Processing: ${url}`);
       
-      // Extract data using AI
-      const data = await extractMemorialData(url);
+      // Extract data using AI (now returns an array of victims)
+      const victims = await extractMemorialData(url);
       
-      if (!data || !data.name || data.name === 'Full Name' || data.name === '') {
-        console.log(`Skipping (could not extract valid name): ${url}`);
+      if (!victims || victims.length === 0) {
+        console.log(`Skipping (no victims found): ${url}`);
         skipCount++;
         continue;
       }
 
-      // Ensure we have an image
-      if (!data.photo) {
-        data.photo = await extractXPostImage(url) || '';
-      }
+      for (const data of victims) {
+        if (!data || !data.name || data.name === 'Full Name' || data.name === '') {
+          console.log(`Skipping victim (invalid name) in: ${url}`);
+          continue;
+        }
 
-      // Prepare memorial entry
-      const entry: Partial<MemorialEntry> = {
-        ...data,
-        verified: false, // New entries from discovery are always unverified
-        media: {
-          xPost: url,
-          photo: data.photo
-        },
-        references: [
-          { label: data.referenceLabel || 'X Post', url: url }
-        ]
-      };
+        // Ensure we have an image
+        if (!data.photo) {
+          data.photo = await extractXPostImage(url) || '';
+        }
 
-      // Submit to database
-      const result = await submitMemorial(entry);
-      
-      if (result.success) {
-        console.log(`Successfully added/merged: ${data.name}`);
-        successCount++;
-      } else {
-        console.error(`Failed to submit ${data.name}: ${result.error}`);
+        // Prepare memorial entry
+        const isXUrl = url.includes('x.com') || url.includes('twitter.com');
+        const entry: Partial<MemorialEntry> = {
+          ...data,
+          verified: false, // New entries from discovery are always unverified
+          media: {
+            xPost: isXUrl ? url : undefined,
+            photo: data.photo
+          },
+          references: [
+            { label: data.referenceLabel || (isXUrl ? 'X Post' : 'Reference'), url: url }
+          ]
+        };
+
+        // Submit to database
+        const result = await submitMemorial(entry);
+        
+        if (result.success) {
+          console.log(`Successfully added/merged: ${data.name}`);
+          successCount++;
+        } else {
+          console.error(`Failed to submit ${data.name}: ${result.error}`);
+        }
       }
 
     } catch (error) {

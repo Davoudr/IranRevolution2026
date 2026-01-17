@@ -587,7 +587,13 @@ function initContributionForm() {
       aiStatus.classList.remove('hidden')
 
       try {
-        const data = await extractMemorialData(url)
+        const victims = await extractMemorialData(url)
+        if (!victims || victims.length === 0) {
+          throw new Error(t('ai.error'))
+        }
+        
+        // Use the first victim found to fill the form
+        const data = victims[0]
         
         // Fill form fields
         const nameInput = form.querySelector('[name="name"]') as HTMLInputElement
@@ -604,7 +610,13 @@ function initContributionForm() {
         if (data.location) locationInput.value = data.location
         if (data.bio) bioInput.value = data.bio
         refUrlInput.value = url
-        if (data.referenceLabel) refLabelInput.value = data.referenceLabel
+        
+        const isXUrl = url.includes('x.com') || url.includes('twitter.com')
+        if (data.referenceLabel) {
+          refLabelInput.value = data.referenceLabel
+        } else {
+          refLabelInput.value = isXUrl ? 'X Post' : 'Source'
+        }
 
         if (data.name) checkDuplicate(data.name)
 

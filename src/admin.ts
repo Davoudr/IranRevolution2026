@@ -493,17 +493,26 @@ aiExtractBtn.addEventListener('click', async () => {
   aiStatus.classList.remove('hidden')
 
   try {
-    const data = await extractMemorialData(url)
+    const victims = await extractMemorialData(url)
+    if (!victims || victims.length === 0) {
+      throw new Error('No memorial data found at this URL.')
+    }
+    
+    // For the quick import form, we take the first victim
+    const data = victims[0]
     populateForm(data)
     
     // Add reference automatically
     const refsArea = document.getElementById('references') as HTMLTextAreaElement
     const existingRefs = refsArea.value.trim()
-    const newRef = `${data.referenceLabel || 'Source'} | ${url}`
+    const isXUrl = url.includes('x.com') || url.includes('twitter.com')
+    const newRef = `${data.referenceLabel || (isXUrl ? 'X Post' : 'Source')} | ${url}`
     refsArea.value = existingRefs ? `${existingRefs}\n${newRef}` : newRef
     
-    if (url.includes('x.com') || url.includes('twitter.com')) {
+    if (isXUrl) {
       (document.getElementById('xPost') as HTMLInputElement).value = url
+    } else {
+      (document.getElementById('xPost') as HTMLInputElement).value = ''
     }
 
     // Try to geocode if needed

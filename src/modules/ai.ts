@@ -1,7 +1,14 @@
+import type { MemorialEntry } from './types';
+
 const OPENROUTER_API_KEY = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_OPENROUTER_API_KEY : process.env.VITE_OPENROUTER_API_KEY;
 const OPENROUTER_MODEL = (typeof import.meta !== 'undefined' && import.meta.env) ? (import.meta.env.VITE_OPENROUTER_MODEL || 'google/gemini-2.0-flash-exp:free') : (process.env.VITE_OPENROUTER_MODEL || 'google/gemini-2.0-flash-exp:free');
 
-export async function extractMemorialData(url: string) {
+export interface ExtractedMemorialData extends Partial<MemorialEntry> {
+  referenceLabel?: string;
+  photo?: string; // Sometimes returned as photo directly
+}
+
+export async function extractMemorialData(url: string): Promise<ExtractedMemorialData[]> {
   try {
     if (!OPENROUTER_API_KEY || OPENROUTER_API_KEY === 'sk-or-v1-...') {
       throw new Error('Invalid OpenRouter API Key. Please update your .env file with a real key from openrouter.ai.');
@@ -42,14 +49,15 @@ export async function extractMemorialData(url: string) {
           {
             role: 'system',
             content: `You are an expert data extractor for a human rights memorial website. 
-            Extract information about a victim of the Iranian revolution from the provided text.
+            Extract information about ALL victims of the Iranian revolution mentioned in the provided text.
+            If multiple people are mentioned as killed or arrested, extract each one as a separate object in an array.
             
             IMPORTANT BILINGUAL RULES:
             1. The "name", "city", "location", and "bio" fields MUST be in English. If the source text is in Persian, translate these to English.
             2. The "name_fa", "city_fa", "location_fa", and "bio_fa" fields MUST be in Persian (Farsi). If the source text is in English, translate these to Persian.
             3. Ensure names are spelled correctly in both languages.
             
-            Return ONLY a valid JSON object with the following fields:
+            Return ONLY a valid JSON array of objects with the following fields:
             - name: Full Name (in English)
             - name_fa: Full Name (in Persian)
             - city: City name (in English)
@@ -59,16 +67,16 @@ export async function extractMemorialData(url: string) {
             - location_fa: Specific location or neighborhood (in Persian)
             - bio: Brief biography (max 200 characters, in English)
             - bio_fa: Brief biography (max 200 characters, in Persian)
-            - photo: The URL of the main image attached to the post (look for pbs.twimg.com/media/ URLs)
-            - referenceLabel: Source name (e.g. BBC, X Post, IHRDC)
+            - photo: The URL of the main image attached to the post or specifically for this victim
+            - referenceLabel: Source name (e.g. BBC, X Post, IHRDC, Hengaw)
             - coords: { "lat": number, "lon": number } (Most accurate coordinates for the location and city)
 
             If a field is missing, use an empty string. If coords are unknown, use default Tehran center { "lat": 35.6892, "lon": 51.3890 }.
-            Do not include any other text or markdown code blocks.`
+            Do not include any other text or markdown code blocks. Return ONLY the JSON array.`
           },
           {
             role: 'user',
-            content: `Extract data from this source: ${content}`
+            content: `Extract data for all victims from this source: ${content}`
           }
         ],
         temperature: 0.1 // Keep it deterministic
@@ -93,7 +101,8 @@ export async function extractMemorialData(url: string) {
     try {
       // Robust JSON parsing (strip markdown if model ignores instructions)
       const cleanJson = resultText.replace(/```json|```/g, '').trim();
-      return JSON.parse(cleanJson);
+      const parsed = JSON.parse(cleanJson);
+      return Array.isArray(parsed) ? parsed : [parsed];
     } catch (parseError) {
       throw new Error('The AI returned an invalid format. Please try again.');
     }
