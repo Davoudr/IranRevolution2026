@@ -1,0 +1,30 @@
+name: Automated Database Backup
+
+on:
+  schedule:
+    - cron: '30 */12 * * *' # Run every 12 hours (at 00:30 and 12:30)
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install deps
+        run: npm ci
+      - name: Run Backup
+        run: npm run backup
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      - name: Commit and push backup
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add backups/
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: automated database backup [skip ci]" && git push)
