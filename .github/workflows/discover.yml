@@ -2,7 +2,7 @@ name: Auto-Discover Memorials
 
 on:
   schedule:
-    - cron: '0 */2 * * *' # Run every 2 hours
+    - cron: '0 */12 * * *' # Run every 12 hours
   workflow_dispatch: # Allow manual trigger
 
 jobs:
@@ -24,3 +24,10 @@ jobs:
           VITE_OPENROUTER_MODEL: ${{ secrets.VITE_OPENROUTER_MODEL }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add scripts/discovery_history.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update discovery history [skip ci]" && git push)
