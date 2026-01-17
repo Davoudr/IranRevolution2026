@@ -440,8 +440,34 @@ export async function batchTranslateMemorials(): Promise<{ success: boolean; cou
 }
 
  async function fetchStaticMemorials(): Promise<MemorialEntry[]> {
-  const response = await fetch(`${import.meta.env.BASE_URL}data/memorials.json`)
-  return response.json()
+  try {
+    const baseUrl = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.BASE_URL : '/';
+    const url = `${baseUrl}data/memorials.json`;
+    
+    // If we're in Node and it's a relative/absolute path-like URL, try reading from disk
+    if (typeof process !== 'undefined' && process.versions && process.versions.node && (url.startsWith('/') || !url.startsWith('http'))) {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      const fullPath = url.startsWith('/') 
+        ? path.join(process.cwd(), 'public', url)
+        : path.join(process.cwd(), 'public', 'data', 'memorials.json');
+      
+      try {
+        const content = await fs.readFile(fullPath, 'utf-8');
+        return JSON.parse(content);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('Failed to read static memorials from disk, falling back to fetch', err);
+      }
+    }
+
+    const response = await fetch(url)
+    return response.json()
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('Error fetching static memorials:', e);
+    return [];
+  }
 }
 
 export function mapRowToEntry(row: MemorialRow): MemorialEntry {

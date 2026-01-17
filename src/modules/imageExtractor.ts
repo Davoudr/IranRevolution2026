@@ -1,5 +1,5 @@
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
-const OPENROUTER_MODEL = import.meta.env.VITE_OPENROUTER_MODEL || 'google/gemini-2.0-flash-exp:free';
+const OPENROUTER_API_KEY = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_OPENROUTER_API_KEY : process.env.VITE_OPENROUTER_API_KEY;
+const OPENROUTER_MODEL = (typeof import.meta !== 'undefined' && import.meta.env) ? (import.meta.env.VITE_OPENROUTER_MODEL || 'google/gemini-2.0-flash-exp:free') : (process.env.VITE_OPENROUTER_MODEL || 'google/gemini-2.0-flash-exp:free');
 
 /**
  * Extracts the primary image URL from an X (Twitter) post using Jina Reader and OpenRouter.
@@ -42,7 +42,7 @@ export async function extractXPostImage(url: string): Promise<string | null> {
       headers: {
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': window.location.origin,
+        'HTTP-Referer': (typeof window !== 'undefined') ? window.location.origin : 'https://iranrevolution2026.github.io',
         'X-Title': 'Iran Revolution Memorial'
       },
       body: JSON.stringify({
