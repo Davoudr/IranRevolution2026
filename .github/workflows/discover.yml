@@ -18,7 +18,7 @@ jobs:
       - name: Install deps
         run: npm ci
       - name: Run Discovery
-        run: npm run discover
+        run: npx tsx scripts/discover_x.ts
         env:
           VITE_OPENROUTER_API_KEY: ${{ secrets.VITE_OPENROUTER_API_KEY }}
           VITE_OPENROUTER_MODEL: ${{ secrets.VITE_OPENROUTER_MODEL }}

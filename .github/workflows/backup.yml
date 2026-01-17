@@ -18,7 +18,7 @@ jobs:
       - name: Install deps
         run: npm ci
       - name: Run Backup
-        run: npm run backup
+        run: npx tsx backup_data.ts
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
