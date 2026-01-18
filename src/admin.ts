@@ -34,6 +34,8 @@ const navLinks = {
   editor: document.getElementById('nav-editor') as HTMLDivElement,
   reports: document.getElementById('nav-reports') as HTMLDivElement
 }
+const mobileMenuToggle = document.getElementById('mobile-menu-toggle') as HTMLButtonElement
+const sidebar = document.querySelector('.sidebar') as HTMLElement
 
 // DOM Elements - Stats
 const statTotal = document.getElementById('stat-total') as HTMLDivElement
@@ -169,10 +171,25 @@ function showSection(sectionName: keyof typeof sections) {
       link.classList.remove('active')
     }
   })
+
+  // Close sidebar on mobile
+  sidebar.classList.remove('active')
 }
 
 Object.entries(navLinks).forEach(([name, link]) => {
   link.addEventListener('click', () => showSection(name as keyof typeof sections))
+})
+
+mobileMenuToggle.addEventListener('click', (e) => {
+  e.stopPropagation()
+  sidebar.classList.toggle('active')
+})
+
+// Close sidebar when clicking outside on mobile
+document.addEventListener('click', (e) => {
+  if (sidebar.classList.contains('active') && !sidebar.contains(e.target as Node) && e.target !== mobileMenuToggle) {
+    sidebar.classList.remove('active')
+  }
 })
 
 // --- Dashboard Logic ---
@@ -180,7 +197,7 @@ Object.entries(navLinks).forEach(([name, link]) => {
 refreshReportsBtn.addEventListener('click', handleRefreshReports)
 
 async function loadData() {
-  const loadingHtml = '<tr><td colspan="5" style="text-align: center; color: var(--muted); padding: 2rem;">Loading data...</td></tr>'
+  const loadingHtml = '<tr><td colspan="6" style="text-align: center; color: var(--muted); padding: 2rem;">Loading data...</td></tr>'
   submissionsList.innerHTML = loadingHtml
   verifiedList.innerHTML = loadingHtml
   recentList.innerHTML = loadingHtml
@@ -217,20 +234,20 @@ async function renderReports() {
 
   reportsList.innerHTML = reports.map(r => `
     <tr class="data-row">
-      <td style="font-size: 0.85rem; color: var(--muted);">${new Date(r.created_at).toLocaleDateString()}</td>
-      <td>
+      <td data-label="Date" style="font-size: 0.85rem; color: var(--muted);">${new Date(r.created_at).toLocaleDateString()}</td>
+      <td data-label="Memorial">
         <div style="font-weight: 600;">${r.memorial_name}</div>
         <div style="font-size: 0.75rem; color: var(--muted);">ID: ${r.memorial_id}</div>
       </td>
-      <td><span class="badge badge-pending">${r.reason}</span></td>
-      <td style="max-width: 300px; font-size: 0.9rem;">${r.details || '<span style="color:var(--muted)">No details</span>'}</td>
-      <td>
+      <td data-label="Reason"><span class="badge badge-pending">${r.reason}</span></td>
+      <td data-label="Details" style="max-width: 300px; font-size: 0.9rem;">${r.details || '<span style="color:var(--muted)">No details</span>'}</td>
+      <td data-label="Status">
         <span class="badge ${r.status === 'resolved' ? 'badge-verified' : r.status === 'dismissed' ? 'badge-muted' : 'badge-pending'}">
           ${r.status || 'pending'}
         </span>
       </td>
-      <td>
-        <div style="display: flex; gap: 0.5rem;">
+      <td data-label="Actions">
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
           <button class="btn btn-primary btn-sm view-memorial-btn" data-id="${r.memorial_id}">View</button>
           ${r.status !== 'resolved' ? `<button class="btn btn-secondary btn-sm resolve-report-btn" data-id="${r.id}">Resolve</button>` : ''}
           <button class="btn btn-danger btn-sm delete-report-btn" data-id="${r.id}">Dismiss</button>
@@ -361,10 +378,10 @@ function renderRecent() {
 
   recentList.innerHTML = recent.map(m => `
     <tr>
-      <td><div style="font-weight: 600;">${m.name}</div></td>
-      <td>${m.city}</td>
-      <td style="font-size: 0.85rem; color: var(--muted);">${m.created_at ? new Date(m.created_at).toLocaleDateString() : 'Unknown'}</td>
-      <td>
+      <td data-label="Name"><div style="font-weight: 600;">${m.name}</div></td>
+      <td data-label="City">${m.city}</td>
+      <td data-label="Submitted At" style="font-size: 0.85rem; color: var(--muted);">${m.created_at ? new Date(m.created_at).toLocaleDateString() : 'Unknown'}</td>
+      <td data-label="Status">
         <span class="badge ${m.verified ? 'badge-verified' : 'badge-pending'}">
           ${m.verified ? 'Verified' : 'Pending'}
         </span>
@@ -381,19 +398,19 @@ function renderTable(memorials: MemorialEntry[], container: HTMLTableSectionElem
 
   container.innerHTML = memorials.map(m => `
     <tr class="data-row">
-      <td>
+      <td data-label="Name">
         <div style="font-weight: 600;">${m.name}</div>
         <div style="font-size: 0.8rem; color: var(--muted);" dir="rtl">${m.name_fa || ''}</div>
       </td>
-      <td>${m.city}</td>
-      <td>${m.date}</td>
-      <td>
+      <td data-label="City">${m.city}</td>
+      <td data-label="Date">${m.date}</td>
+      <td data-label="Status">
         <span class="badge ${m.verified ? 'badge-verified' : 'badge-pending'}">
           ${m.verified ? 'Verified' : 'Pending'}
         </span>
       </td>
-      <td>
-        <div style="display: flex; gap: 0.5rem;">
+      <td data-label="Actions">
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
           <button class="btn btn-secondary btn-sm edit-btn" data-id="${m.id}">Edit</button>
           ${!m.verified ? `<button class="btn btn-primary btn-sm verify-btn" data-id="${m.id}">Verify</button>` : ''}
           <button class="btn btn-secondary btn-sm merge-btn" data-id="${m.id}" title="Merge references into another entry">Merge</button>
